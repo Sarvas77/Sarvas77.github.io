@@ -1,21 +1,10 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>My Galaxy Simulation</title>
-    <meta charset="UTF-8">
-    
-    <link type="text/css" href="https://www.glowscript.org/css/redmond/2.1/jquery-ui.custom.css" rel="stylesheet" />
-    <script type="text/javascript" src="https://www.glowscript.org/lib/jquery/2.1/jquery.min.js"></script>
-    <script type="text/javascript" src="https://www.glowscript.org/lib/jquery/2.1/jquery-ui.custom.min.js"></script>
-    <script type="text/javascript" src="https://www.glowscript.org/package/glow.3.2.min.js"></script>
-    <script type="text/javascript" src="https://www.glowscript.org/package/RSrun.3.2.min.js"></script>
-</head>
-<body>
-    <h1>Welcome to my 3D Galaxy!</h1>
-    <p>This simulation was built using VPython.</p>
-
-    <div id="glowscript" class="glowscript">
+<div id="glowscript" class="glowscript">
         <script type="text/vpython">
+GlowScript 3.2 VPython
+
+import random
+import math
+
 G = 1.0 
 BLACK_HOLE_MASS = 150000
 NUM_SPIRAL_STARS = 1000
@@ -107,5 +96,3 @@ while True:
         star.pos = vector(star.r * math.cos(star.angle), star.y, star.r * math.sin(star.angle))
         </script>
     </div>
-</body>
-</html>
