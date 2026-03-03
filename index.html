@@ -1,3 +1,6 @@
+<!DOCTYPE html>
+<html>
+
 <head>
     <title>My Galaxy Simulation</title>
     <meta charset="UTF-8">
@@ -9,19 +12,15 @@
     <script type="text/javascript" src="https://www.glowscript.org/package/RScompiler.3.2.min.js"></script>
 </head>
 
+
 <body>
     <h1>Welcome to my 3D Galaxy!</h1>
     <p>This simulation was built using VPython.</p>
-
-
 
     <div id="glowscript" class="glowscript"></div>
 
     <script id="python-code" type="text/vpython">
 GlowScript 3.2 VPython
-
-import random
-import math
 
 G = 1.0 
 BLACK_HOLE_MASS = 150000
@@ -29,7 +28,14 @@ NUM_SPIRAL_STARS = 1000
 NUM_BULGE_STARS = 500
 DT = 0.05
 
-# --- VPYTHON SCENE SETUP ---
+def gauss(mu, sigma):
+    u1 = random()
+    u2 = random()
+    while u1 == 0: 
+        u1 = random()
+    z0 = sqrt(-2.0 * log(u1)) * cos(2.0 * pi * u2)
+    return z0 * sigma + mu
+
 scene = canvas(title="3D Galaxy Simulation", width=1000, height=800, background=color.black)
 scene.camera.pos = vector(0, 150, 200)
 scene.camera.axis = vector(0, -150, -200)
@@ -37,92 +43,77 @@ scene.camera.axis = vector(0, -150, -200)
 scene.ambient = color.gray(0.2)
 central_glow = local_light(pos=vector(0,0,0), color=color.orange)
 
-# 1. Create the Supermassive Black Hole
 black_hole = sphere(pos=vector(0, 0, 0), radius=5, color=color.orange, emissive=True)
 
 bodies = []
 
-# 2. Spawn the Spiral Arms
 spiral_a = 15
 spiral_b = 0.3
 
 for i in range(NUM_SPIRAL_STARS):
     arm = i % 2
-    theta = random.uniform(1, 10)
+    theta = 1 + 9 * random() 
     
-    # Core radius of this star along the arm
-    r = spiral_a * math.exp(spiral_b * theta)
-    r += random.gauss(0, 10) # scatter
-    if r < 10: r = 10 
+    r = spiral_a * exp(spiral_b * theta)
+    r += gauss(0, 10) 
+    if r < 10: 
+        r = 10 
     
-    angle = theta + (arm * math.pi)
-
-    # Thick disc modeling
-    y = random.gauss(0, 3)
+    angle = theta + arm * pi
+    y = gauss(0, 3)
     
-    # Stable analytical orbital velocity
-    v = math.sqrt((G * BLACK_HOLE_MASS) / r)
+    v = sqrt(G * BLACK_HOLE_MASS / r)
     omega = v / r
     
     color_mix = min(1.0, r / 200.0)
-    star_color = vector(1.0 - color_mix*0.5, 1.0, 1.0)
+    star_color = vector(1.0 - color_mix * 0.5, 1.0, 1.0)
     
-    pos = vector(r * math.cos(angle), y, r * math.sin(angle))
+    pos = vector(r * cos(angle), y, r * sin(angle))
     
-    # Use individual spheres
     star = sphere(pos=pos, radius=1, color=star_color, emissive=True)
     star.r = r
     star.angle = angle
-    star.y = y
     star.omega = omega
     
     bodies.append(star)
 
-# 3. Spawn the Galactic Bulge (Dense central cloud)
 for i in range(NUM_BULGE_STARS):
-    r = abs(random.gauss(0, 15))
-    if r < 5: r = 5
+    r = abs(gauss(0, 15))
+    if r < 5: 
+        r = 5
     
-    angle = random.uniform(0, 2*math.pi)
-    y = random.gauss(0, 5) * math.exp(-r/20) # Thicker near center
+    angle = random() * 2 * pi 
+    y = gauss(0, 5) * exp(-r / 20) 
     
-    v = math.sqrt((G * BLACK_HOLE_MASS) / r) * 0.7
+    v = sqrt(G * BLACK_HOLE_MASS / r) * 0.7
     omega = v / r
     
-    tint = random.uniform(0.5, 0.9)
+    tint = 0.5 + 0.4 * random() 
     star_color = vector(1.0, tint, 0.4)
     
-    pos = vector(r * math.cos(angle), y, r * math.sin(angle))
+    pos = vector(r * cos(angle), y, r * sin(angle))
     
     star = sphere(pos=pos, radius=1.2, color=star_color, emissive=True)
     star.r = r
     star.angle = angle
-    star.y = y
     star.omega = omega
     
     bodies.append(star)
 
 print("Galaxy generated with " + str(NUM_SPIRAL_STARS + NUM_BULGE_STARS) + " stars.")
 
-# --- MAIN SIMULATION LOOP ---
 while True:
     rate(60)
     
-    # Analytically update angles to prevent ANY ejections
     for star in bodies:
         star.angle += star.omega * DT
-        star.pos = vector(star.r * math.cos(star.angle), star.y, star.r * math.sin(star.angle))
+        star.pos = vector(star.r * cos(star.angle), star.pos.y, star.r * sin(star.angle))
     </script>
 
     <script type="text/javascript">
         $(function () {
-            // Tell GlowScript where to put the canvas
             window.__context = { glowscript_container: $("#glowscript").removeAttr("id") };
-
-            // Get the Python code from the script tag
             var userCode = document.getElementById("python-code").text;
-
-            // Compile and execute
             var program = glowscript_compile(userCode, { lang: "vpython", version: "3.2" });
             eval(program);
         });
