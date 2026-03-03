@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Galaxy Simulation</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: black;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="glowscript" class="glowscript">
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <link type="text/css" href="https://www.glowscript.org/css/redmond/2.1/jquery-ui.custom.css" rel="stylesheet" />
+        <link type="text/css" href="https://www.glowscript.org/css/ide.css" rel="stylesheet" />
+        <script type="text/javascript" src="https://www.glowscript.org/lib/jquery/2.1/jquery.min.js"></script>
+        <script type="text/javascript" src="https://www.glowscript.org/lib/jquery/2.1/jquery-ui.custom.min.js"></script>
+        <script type="text/javascript" src="https://www.glowscript.org/package/glow.3.2.min.js"></script>
+        <script type="text/javascript" src="https://www.glowscript.org/package/RSrun.3.2.min.js"></script>
+        <script type="text/javascript">
+
+            // START JAVASCRIPT
+            ; (function () {
+                ;
+                var ρσ_modules = {};
+                ρσ_modules.pythonize = {};
+
+                (function () {
+                    function strings() {
+                        var string_funcs, exclude, name;
+                        string_funcs = set("capitalize strip lstrip rstrip islower isupper isspace lower upper swapcase center count endswith startswith find rfind index rindex format join ljust rjust partition rpartition replace split rsplit splitlines zfill".split(" "));
+                        if (!arguments.length) {
+                            exclude = (function () {
+                                var s = ρσ_set();
+                                s.jsset.add("split");
+                                s.jsset.add("replace");
+                                return s;
+                            })();
+                        } else if (arguments[0]) {
+                            exclude = Array.prototype.slice.call(arguments);
+                        } else {
+                            exclude = null;
+                        }
+                        if (exclude) {
+                            string_funcs = string_funcs.difference(set(exclude));
+                        }
+                        var ρσ_Iter0 = string_funcs;
+                        ρσ_Iter0 = ((typeof ρσ_Iter0[Symbol.iterator] === "function") ? (ρσ_Iter0 instanceof Map ? ρσ_Iter0.keys() : ρσ_Iter0) : Object.keys(ρσ_Iter0));
+                        for (var ρσ_Index0 of ρσ_Iter0) {
+                            name = ρσ_Index0;
+                            (ρσ_expr_temp = String.prototype)[(typeof name === "number" && name < 0) ? ρσ_expr_temp.length + name : name] = (ρσ_expr_temp = ρσ_str.prototype)[(typeof name === "number" && name < 0) ? ρσ_expr_temp.length + name : name];
+                        }
+                    };
+                    if (!strings.__module__) Object.defineProperties(strings, {
+                        __module__: { value: "pythonize" }
+                    });
+
+                    ρσ_modules.pythonize.strings = strings;
+                })();
+                async function __main__() {
+                    "use strict";
+                    var display = canvas;
+                    var scene = canvas();
+
+                    function round(num, n = 0) { return Number(num.toFixed(n)) }
+
+                    var version, print, arange, __name__, type, ρσ_ls, G, BLACK_HOLE_MASS, NUM_SPIRAL_STARS, NUM_BULGE_STARS, DT, scene, central_glow, black_hole, bodies, spiral_a, spiral_b, arm, theta, r, angle, y, v, omega, color_mix, star_color, pos, star, i, tint;
+                    version = ρσ_list_decorate(["3.2", "glowscript"]);
+                    Array.prototype['+'] = function (r) { return this.concat(r) }
+                    Array.prototype['*'] = function (r) { return __array_times_number(this, r) }
+                    window.__GSlang = "vpython";
+                    print = GSprint;
+                    arange = range;
+                    __name__ = "__main__";
+                    type = pytype;
+                    var strings = ρσ_modules.pythonize.strings;
+
+                    strings();
+                    "3";
+                    G = 1;
+                    "4";
+                    BLACK_HOLE_MASS = 15e4;
+                    "5";
+                    NUM_SPIRAL_STARS = 1e3;
+                    "6";
+                    NUM_BULGE_STARS = 500;
+                    "7";
+                    DT = .05;
+                    "10";
+                    async function gauss(mu, sigma) {
+                        var ρσ_ls, u1, u2, z0;
+                        "11";
+                        u1 = random();
+                        "12";
+                        u2 = random();
+                        "13";
+                        while ((u1 === 0 || typeof u1 === "object" && ρσ_equals(u1, 0))) {
+                            "14";
+                            u1 = random();
+                        }
+                        "15";
+                        z0 = sqrt(1["-u"]()["*"](2)["*"](log(u1)))["*"](cos(2["*"](pi)["*"](u2)));
+                        "16";
+                        return z0["*"](sigma)["+"](mu);
+                    };
+                    if (!gauss.__argnames__) Object.defineProperties(gauss, {
+                        __argnames__: { value: ["mu", "sigma"] },
+                        __module__: { value: null }
+                    });
+
+                    "19";
+                    scene = ρσ_interpolate_kwargs.call(this, canvas, [ρσ_desugar_kwargs({ title: "3D Galaxy Simulation", width: 1e3, height: 800, background: color.black })]);
+                    "20";
+                    scene.camera.pos = vector(0, 150, 200);
+                    "21";
+                    scene.camera.axis = vector(0, 1["-u"]()["*"](150), 1["-u"]()["*"](200));
+                    "23";
+                    scene.ambient = color.gray(.2);
+                    "24";
+                    central_glow = ρσ_interpolate_kwargs.call(this, local_light, [ρσ_desugar_kwargs({ pos: vector(0, 0, 0), color: color.orange })]);
+                    "27";
+                    black_hole = ρσ_interpolate_kwargs.call(this, sphere, [ρσ_desugar_kwargs({ pos: vector(0, 0, 0), radius: 5, color: color.orange, emissive: true })]);
+                    "29";
+                    bodies = ρσ_list_decorate([]);
+                    "32";
+                    spiral_a = 15;
+                    "33";
+                    spiral_b = .3;
+                    "35";
+                    for (var ρσ_Index1 = 0; ρσ_Index1["<"](NUM_SPIRAL_STARS); ρσ_Index1++) {
+                        i = ρσ_Index1;
+                        "36";
+                        arm = i["%"](2);
+                        "37";
+                        theta = 1["+"](9["*"](random()));
+                        "39";
+                        r = spiral_a["*"](exp(spiral_b["*"](theta)));
+                        "40";
+                        r = r["+"]((await gauss(0, 10)));
+                        "41";
+                        if (r["<"](10)) {
+                            "42";
+                            r = 10;
+                        }
+                        "44";
+                        angle = theta["+"](arm["*"](pi));
+                        "46";
+                        y = (await gauss(0, 3));
+                        "48";
+                        v = sqrt(G["*"](BLACK_HOLE_MASS)["/"](r));
+                        "49";
+                        omega = v["/"](r);
+                        "51";
+                        color_mix = min(1, r["/"](200));
+                        "52";
+                        star_color = vector(1["-"](1["*"](color_mix)["*"](.5)), 1, 1);
+                        "54";
+                        pos = vector(r["*"](cos(angle)), y, r["*"](sin(angle)));
+                        "56";
+                        star = ρσ_interpolate_kwargs.call(this, sphere, [ρσ_desugar_kwargs({ pos: pos, radius: 1, color: star_color, emissive: true })]);
+                        "57";
+                        star.r = r;
+                        "58";
+                        star.angle = angle;
+                        "59";
+                        star.omega = omega;
+                        "61";
+                        bodies.append(star);
+                    }
+                    "64";
+                    for (var ρσ_Index2 = 0; ρσ_Index2["<"](NUM_BULGE_STARS); ρσ_Index2++) {
+                        i = ρσ_Index2;
+                        "65";
+                        r = abs((await gauss(0, 15)));
+                        "66";
+                        if (r["<"](5)) {
+                            "67";
+                            r = 5;
+                        }
+                        "69";
+                        angle = random()["*"](2)["*"](pi);
+                        "70";
+                        y = (await gauss(0, 5))["*"](exp(1["-u"]()["*"](r)["/"](20)));
+                        "72";
+                        v = sqrt(G["*"](BLACK_HOLE_MASS)["/"](r))["*"](.7);
+                        "73";
+                        omega = v["/"](r);
+                        "75";
+                        tint = .5["+"](.4["*"](random()));
+                        "76";
+                        star_color = vector(1, tint, .4);
+                        "78";
+                        pos = vector(r["*"](cos(angle)), y, r["*"](sin(angle)));
+                        "80";
+                        star = ρσ_interpolate_kwargs.call(this, sphere, [ρσ_desugar_kwargs({ pos: pos, radius: 1.2, color: star_color, emissive: true })]);
+                        "81";
+                        star.r = r;
+                        "82";
+                        star.angle = angle;
+                        "83";
+                        star.omega = omega;
+                        "85";
+                        bodies.append(star);
+                    }
+                    "87";
+                    print("Galaxy generated with "["+"](str(NUM_SPIRAL_STARS["+"](NUM_BULGE_STARS)))["+"](" stars."));
+                    "90";
+                    while (true) {
+                        "91";
+                        (await rate(60));
+                        "93";
+                        var ρσ_Iter3 = bodies;
+                        ρσ_Iter3 = ((typeof ρσ_Iter3[Symbol.iterator] === "function") ? (ρσ_Iter3 instanceof Map ? ρσ_Iter3.keys() : ρσ_Iter3) : Object.keys(ρσ_Iter3));
+                        for (var ρσ_Index3 of ρσ_Iter3) {
+                            star = ρσ_Index3;
+                            "94";
+                            star.angle = star.angle["+"](star.omega["*"](DT));
+                            "95";
+                            star.pos = vector(star.r["*"](cos(star.angle)), star.pos.y, star.r["*"](sin(star.angle)));
+                        }
+                    }
+                };
+                if (!__main__.__module__) Object.defineProperties(__main__, {
+                    __module__: { value: null }
+                });
+
+                ; $(function () { window.__context = { glowscript_container: $("#glowscript").removeAttr("id") }; __main__() })
+            })()
+            // END JAVASCRIPT
+
+        </script>
+    </div>
+</body>
+
+</html>

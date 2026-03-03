@@ -4,120 +4,45 @@
 <head>
     <title>My Galaxy Simulation</title>
     <meta charset="UTF-8">
-    <link type="text/css" href="https://www.glowscript.org/css/redmond/2.1/jquery-ui.custom.css" rel="stylesheet" />
-    <script type="text/javascript" src="https://www.glowscript.org/lib/jquery/2.1/jquery.min.js"></script>
-    <script type="text/javascript" src="https://www.glowscript.org/lib/jquery/2.1/jquery-ui.custom.min.js"></script>
-    <script type="text/javascript" src="https://www.glowscript.org/package/glow.3.2.min.js"></script>
-    <script type="text/javascript" src="https://www.glowscript.org/package/RSrun.3.2.min.js"></script>
-    <script type="text/javascript" src="https://www.glowscript.org/package/RScompiler.3.2.min.js"></script>
-</head>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0f0f15;
+            color: #ececec;
+            text-align: center;
+            margin: 0;
+            padding: 30px;
+        }
 
+        h1 {
+            margin-top: 0;
+            margin-bottom: 5px;
+            font-size: 2.5em;
+            color: #ffaa55;
+            text-shadow: 0 0 10px rgba(255, 170, 85, 0.5);
+        }
+
+        p {
+            margin-bottom: 30px;
+            color: #aaa;
+            font-size: 1.1em;
+        }
+
+        iframe {
+            border: 2px solid #333;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+            max-width: 100%;
+            background-color: black;
+        }
+    </style>
+</head>
 
 <body>
     <h1>Welcome to my 3D Galaxy!</h1>
-    <p>This simulation was built using VPython.</p>
+    <p>This simulation was built using VPython and integrated using an iframe.</p>
 
-    <div id="glowscript" class="glowscript"></div>
-
-    <script id="python-code" type="text/vpython">
-GlowScript 3.2 VPython
-
-G = 1.0 
-BLACK_HOLE_MASS = 150000
-NUM_SPIRAL_STARS = 1000
-NUM_BULGE_STARS = 500
-DT = 0.05
-
-def gauss(mu, sigma):
-    u1 = random()
-    u2 = random()
-    while u1 == 0: 
-        u1 = random()
-    z0 = sqrt(-2.0 * log(u1)) * cos(2.0 * pi * u2)
-    return z0 * sigma + mu
-
-scene = canvas(title="3D Galaxy Simulation", width=1000, height=800, background=color.black)
-scene.camera.pos = vector(0, 150, 200)
-scene.camera.axis = vector(0, -150, -200)
-
-scene.ambient = color.gray(0.2)
-central_glow = local_light(pos=vector(0,0,0), color=color.orange)
-
-black_hole = sphere(pos=vector(0, 0, 0), radius=5, color=color.orange, emissive=True)
-
-bodies = []
-
-spiral_a = 15
-spiral_b = 0.3
-
-for i in range(NUM_SPIRAL_STARS):
-    arm = i % 2
-    theta = 1 + 9 * random() 
-    
-    r = spiral_a * exp(spiral_b * theta)
-    r += gauss(0, 10) 
-    if r < 10: 
-        r = 10 
-    
-    angle = theta + arm * pi
-    y = gauss(0, 3)
-    
-    v = sqrt(G * BLACK_HOLE_MASS / r)
-    omega = v / r
-    
-    color_mix = min(1.0, r / 200.0)
-    star_color = vector(1.0 - color_mix * 0.5, 1.0, 1.0)
-    
-    pos = vector(r * cos(angle), y, r * sin(angle))
-    
-    star = sphere(pos=pos, radius=1, color=star_color, emissive=True)
-    star.r = r
-    star.angle = angle
-    star.omega = omega
-    
-    bodies.append(star)
-
-for i in range(NUM_BULGE_STARS):
-    r = abs(gauss(0, 15))
-    if r < 5: 
-        r = 5
-    
-    angle = random() * 2 * pi 
-    y = gauss(0, 5) * exp(-r / 20) 
-    
-    v = sqrt(G * BLACK_HOLE_MASS / r) * 0.7
-    omega = v / r
-    
-    tint = 0.5 + 0.4 * random() 
-    star_color = vector(1.0, tint, 0.4)
-    
-    pos = vector(r * cos(angle), y, r * sin(angle))
-    
-    star = sphere(pos=pos, radius=1.2, color=star_color, emissive=True)
-    star.r = r
-    star.angle = angle
-    star.omega = omega
-    
-    bodies.append(star)
-
-print("Galaxy generated with " + str(NUM_SPIRAL_STARS + NUM_BULGE_STARS) + " stars.")
-
-while True:
-    rate(60)
-    
-    for star in bodies:
-        star.angle += star.omega * DT
-        star.pos = vector(star.r * cos(star.angle), star.pos.y, star.r * sin(star.angle))
-    </script>
-
-    <script type="text/javascript">
-        $(function () {
-            window.__context = { glowscript_container: $("#glowscript").removeAttr("id") };
-            var userCode = document.getElementById("python-code").text;
-            var program = glowscript_compile(userCode, { lang: "vpython", version: "3.2" });
-            eval(program);
-        });
-    </script>
+    <iframe src="GalaxySim.html" width="1000" height="800" allowfullscreen></iframe>
 </body>
 
 </html>
