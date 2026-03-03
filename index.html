@@ -8,9 +8,12 @@
     <script type="text/javascript" src="https://www.glowscript.org/package/RSrun.3.2.min.js"></script>
     <script type="text/javascript" src="https://www.glowscript.org/package/RScompiler.3.2.min.js"></script>
 </head>
+
 <body>
     <h1>Welcome to my 3D Galaxy!</h1>
     <p>This simulation was built using VPython.</p>
+
+
 
     <div id="glowscript" class="glowscript"></div>
 
@@ -112,10 +115,10 @@ while True:
     </script>
 
     <script type="text/javascript">
-        $(function() {
+        $(function () {
             // Tell GlowScript where to put the canvas
             window.__context = { glowscript_container: $("#glowscript").removeAttr("id") };
-            
+
             // Get the Python code from the script tag
             var userCode = document.getElementById("python-code").text;
 
@@ -125,4 +128,5 @@ while True:
         });
     </script>
 </body>
+
 </html>
