@@ -1,5 +1,21 @@
-<div id="glowscript" class="glowscript">
-        <script type="text/vpython">
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Galaxy Simulation</title>
+    <meta charset="UTF-8">
+    <link type="text/css" href="https://www.glowscript.org/css/redmond/2.1/jquery-ui.custom.css" rel="stylesheet" />
+    <script type="text/javascript" src="https://www.glowscript.org/lib/jquery/2.1/jquery.min.js"></script>
+    <script type="text/javascript" src="https://www.glowscript.org/lib/jquery/2.1/jquery-ui.custom.min.js"></script>
+    <script type="text/javascript" src="https://www.glowscript.org/package/glow.3.2.min.js"></script>
+    <script type="text/javascript" src="https://www.glowscript.org/package/RSrun.3.2.min.js"></script>
+</head>
+<body>
+    <h1>Welcome to my 3D Galaxy!</h1>
+    <p>This simulation was built using VPython.</p>
+
+    <div id="glowscript" class="glowscript"></div>
+
+    <script id="python-code" type="text/vpython">
 GlowScript 3.2 VPython
 
 import random
@@ -88,11 +104,26 @@ print("Galaxy generated with " + str(NUM_SPIRAL_STARS + NUM_BULGE_STARS) + " sta
 
 # --- MAIN SIMULATION LOOP ---
 while True:
-    rate(60) # Super smooth rendering!
+    rate(60)
     
     # Analytically update angles to prevent ANY ejections
     for star in bodies:
         star.angle += star.omega * DT
         star.pos = vector(star.r * math.cos(star.angle), star.y, star.r * math.sin(star.angle))
-        </script>
-    </div>
+    </script>
+
+    <script type="text/javascript">
+        $(function() {
+            // Tell GlowScript where to put the canvas
+            window.__context = { glowscript_container: $("#glowscript").removeAttr("id") };
+            
+            // Get the Python code from the script tag
+            var userCode = document.getElementById("python-code").text;
+
+            // Compile and execute
+            var program = glowscript_compile(userCode, { lang: "vpython", version: "3.2" });
+            eval(program);
+        });
+    </script>
+</body>
+</html>
