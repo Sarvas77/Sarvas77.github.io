@@ -2,34 +2,84 @@
 <html>
 
 <head>
-    <title>My Galaxy Simulation</title>
+    <title>My Physics Simulations</title>
     <meta charset="UTF-8">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #0f0f15;
+            /* Applied the new font and a deep space radial gradient */
+            font-family: 'Space Grotesk', sans-serif;
+            background: radial-gradient(circle at top, #1b1b28, #0f0f15 40%, #050508 100%);
             color: #ececec;
             text-align: center;
             margin: 0;
-            padding: 30px;
+            padding: 0;
+            min-height: 100vh;
         }
 
-        h1 {
+        /* The new Hero intro section */
+        header {
+            padding: 80px 20px 40px 20px;
+        }
+
+        header h1 {
+            font-size: 3.5em;
+            margin: 0;
+            color: #ffffff;
+            letter-spacing: -1px;
+        }
+
+        header p {
+            font-size: 1.2em;
+            color: #888;
+            max-width: 600px;
+            margin: 10px auto;
+        }
+
+        /* Updated headers for the specific projects */
+        h2.project-title {
+            font-size: 2.2em;
             margin-top: 0;
             margin-bottom: 5px;
-            font-size: 2.5em;
-            color: #ffaa55;
-            text-shadow: 0 0 10px rgba(255, 170, 85, 0.5);
         }
 
-        p {
+        .neon-orange {
+            color: #ffaa55;
+            text-shadow: 0 0 15px rgba(255, 170, 85, 0.4);
+        }
+
+        .neon-blue {
+            color: #55aaff;
+            text-shadow: 0 0 15px rgba(85, 170, 255, 0.4);
+        }
+
+        .neon-green {
+            color: #55ffaa;
+            text-shadow: 0 0 15px rgba(85, 255, 170, 0.4);
+        }
+
+        p.project-desc {
             margin-bottom: 30px;
             color: #aaa;
             font-size: 1.1em;
         }
 
+        /* Glassmorphism Card Style for the containers */
+        .sim-container {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 40px 20px;
+            margin: 0 auto 80px auto;
+            max-width: 1080px;
+            /* Prevents it from stretching too wide on big monitors */
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+        }
+
         iframe {
-            border: 2px solid #333;
+            border: 2px solid #222;
             border-radius: 12px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
             max-width: 100%;
@@ -39,10 +89,30 @@
 </head>
 
 <body>
-    <h1>Welcome to my 3D Galaxy!</h1>
-    <p>This simulation was built using VPython and integrated using an iframe.</p>
 
-    <iframe src="GalaxySim.html" width="1000" height="800" allowfullscreen></iframe>
+    <header>
+        <h1>Physics & Computational Engines by Sarvas77</h1>
+        <p>A collection of N-body and vector mechanics simulations built with Python, SciPy, and WebGL.</p>
+    </header>
+
+    <div class="sim-container">
+        <h2 class="project-title neon-orange">3D Galaxy Simulation</h2>
+        <p class="project-desc">A 3D N-body orbital engine with a massive central black hole.</p>
+        <iframe src="GalaxySim.html" width="1000" height="800" allowfullscreen></iframe>
+    </div>
+
+    <div class="sim-container">
+        <h2 class="project-title neon-blue">Chaotic 3-Body Dance</h2>
+        <p class="project-desc">An elastic collision ring handling a chaotic 3-body system.</p>
+        <iframe src="ThreebodysimRing.html" width="1000" height="700" allowfullscreen></iframe>
+    </div>
+
+    <div class="sim-container">
+        <h2 class="project-title neon-green">Fully 3D 4-Body Stick Orbit</h2>
+        <p class="project-desc">A 3D vector mechanics engine calculating momentum, gravity, and angular torque.</p>
+        <iframe src="fourbodystick.html" width="1000" height="800" allowfullscreen></iframe>
+    </div>
+
 </body>
 
 </html>
