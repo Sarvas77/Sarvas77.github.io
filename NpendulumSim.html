@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>N-Pendulum Sim - Stable Energy</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
+    <style>
+        body {
+            margin: 0;
+            background: #141414;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        #ui-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(20, 20, 20, 0.85);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #333;
+            z-index: 10;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            min-width: 250px;
+        }
+
+        .ui-row {
+            margin-bottom: 15px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 10px;
+            background: #2a2a2a;
+            color: #fff;
+            border: 1px solid #444;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: #3a3a3a;
+        }
+
+        .ui-label {
+            font-size: 14px;
+            color: #ddd;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .slider {
+            width: 100%;
+            cursor: pointer;
+            accent-color: #64ffda;
+        }
+
+        #energy-drift {
+            font-family: monospace;
+            font-size: 14px;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 6px;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .instructions {
+            margin-top: 15px;
+            color: #888;
+            font-size: 12px;
+            line-height: 1.4;
+            border-top: 1px solid #333;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="ui-container">
+        <div id="energy-drift">Energy Drift: 0.00000%</div>
+
+        <div class="ui-row">
+            <div class="ui-label">
+                <span>Number of Links</span>
+                <span id="n-display" style="color: #64ffda; font-weight: bold;">4</span>
+            </div>
+            <input type="range" id="n-slider" class="slider" min="1" max="15" value="4">
+        </div>
+
+        <div class="ui-row">
+            <button id="pause-btn" class="btn">Start Simulation</button>
+        </div>
+
+        <div class="instructions">
+            <strong>Controls:</strong><br>
+            • Click and drag near any round mass to grab and throw it.<br>
+            • Energy meter is paused while grabbing to allow intentional energy injections.
+        </div>
+    </div>
+
+    <script>
+        // --- PHYSICS ENGINE START ---
+        let N = 4;
+        let lengths = [];
+        let masses = [];
+        let angles = [];
+        let aVels = [];
+
+        const g = 981;
+        let traceHistory = [];
+        let mu = [], coeffMatrix = [];
+
+        // Energy Tracking Variables
+        let initialEnergy = 0, currentEnergy = 0, groundLevel = 0;
+
+        // Interaction
+        let draggedMass = -1;
+        let isPaused = true;
+
+        function setup() {
+            createCanvas(windowWidth, windowHeight);
+
+            document.getElementById('n-slider').addEventListener('input', function (e) {
+                let newN = parseInt(e.target.value);
+                document.getElementById('n-display').innerText = newN;
+                initPendulum(newN);
+            });
+
+            document.getElementById('pause-btn').addEventListener('click', function (e) {
+                isPaused = !isPaused;
+                e.target.innerText = isPaused ? "Start Simulation" : "Pause Simulation";
+            });
+
+            initPendulum(parseInt(document.getElementById('n-slider').value));
+        }
+
+        function initPendulum(newN) {
+            N = newN;
+            lengths = [];
+            masses = [];
+            angles = [];
+            aVels = [];
+            traceHistory = [];
+            groundLevel = 0;
+            draggedMass = -1;
+
+            // Adaptive length based on N and screen size
+            let l = Math.min(120, (windowHeight * 0.45) / N);
+
+            for (let i = 0; i < N; i++) {
+                lengths.push(l);
+                masses.push(10);
+                angles.push(Math.PI / 2); // Start horizontal
+                aVels.push(0);
+                groundLevel -= l;
+            }
+
+            precomputeConstants();
+            initialEnergy = calculateTotalEnergy();
+            currentEnergy = initialEnergy;
+        }
+
+        function precomputeConstants() {
+            mu = [];
+            coeffMatrix = [];
+            for (let i = 0; i < N; i++) {
+                let sum = 0;
+                for (let k = i; k < N; k++) sum += masses[k];
+                mu[i] = sum;
+            }
+            for (let i = 0; i < N; i++) {
+                coeffMatrix[i] = [];
+                for (let j = 0; j < N; j++) {
+                    let maxIdx = Math.max(i, j);
+                    coeffMatrix[i][j] = mu[maxIdx] * lengths[i] * lengths[j];
+                }
+            }
+        }
+
+        function draw() {
+            background(20);
+
+            // STABILITY: 5 sub-steps to prevent energy leaks
+            if (!isPaused || draggedMass !== -1) {
+                let subSteps = 5;
+                let dt = 0.015 / subSteps;
+                for (let step = 0; step < subSteps; step++) {
+                    rk4Step(dt);
+                }
+            }
+
+            currentEnergy = calculateTotalEnergy();
+            updateEnergyMeter();
+
+            push();
+            translate(width / 2, height / 3);
+            let x = 0, y = 0;
+
+            // Draw links and masses
+            for (let i = 0; i < N; i++) {
+                let nextX = x + lengths[i] * Math.sin(angles[i]);
+                let nextY = y + lengths[i] * Math.cos(angles[i]);
+
+                stroke(255, 150);
+                strokeWeight(3);
+                line(x, y, nextX, nextY);
+
+                // Highlight grabbed mass
+                if (i === draggedMass) {
+                    fill(100, 255, 200);
+                    stroke(255);
+                    strokeWeight(2);
+                } else {
+                    fill(255, 100, 100);
+                    noStroke();
+                }
+
+                circle(nextX, nextY, masses[i] * 1.5);
+
+                x = nextX;
+                y = nextY;
+
+                if (i === N - 1) {
+                    traceHistory.push({ x: x, y: y });
+                    if (traceHistory.length > 500) traceHistory.shift();
+                }
+            }
+
+            // Draw trace history
+            noFill();
+            strokeWeight(2);
+            stroke(100, 200, 255, 150);
+            beginShape();
+            for (let p of traceHistory) vertex(p.x, p.y);
+            endShape();
+            pop();
+        }
+
+        function mousePressed() {
+            let mx = mouseX - width / 2;
+            let my = mouseY - height / 3;
+            let x = 0, y = 0;
+            let minDist = 40; // grab radius
+            draggedMass = -1;
+
+            for (let i = 0; i < N; i++) {
+                x += lengths[i] * Math.sin(angles[i]);
+                y += lengths[i] * Math.cos(angles[i]);
+                let d = dist(mx, my, x, y);
+                if (d < minDist) {
+                    minDist = d;
+                    draggedMass = i;
+                }
+            }
+        }
+
+        function mouseReleased() {
+            if (draggedMass !== -1) {
+                // Readjust initial energy after user intervention
+                initialEnergy = calculateTotalEnergy();
+                draggedMass = -1;
+            }
+        }
+
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight);
+            initPendulum(N);
+        }
+
+        function calculateTotalEnergy() {
+            if (N === 0) return 0;
+            let K = 0, U = 0;
+            for (let i = 0; i < N; i++) {
+                let vx = 0, vy = 0, y_pos = 0;
+                for (let k = 0; k <= i; k++) {
+                    vx += lengths[k] * aVels[k] * Math.cos(angles[k]);
+                    vy += -lengths[k] * aVels[k] * Math.sin(angles[k]);
+                    y_pos += -lengths[k] * Math.cos(angles[k]);
+                }
+                K += 0.5 * masses[i] * (vx * vx + vy * vy);
+                U += masses[i] * g * (y_pos - groundLevel);
+            }
+            return K + U;
+        }
+
+        function updateEnergyMeter() {
+            let driftEl = document.getElementById('energy-drift');
+            if (draggedMass !== -1) {
+                driftEl.style.color = '#fff';
+                driftEl.innerText = "Energy Drift: (Injecting Power...)";
+                return;
+            }
+
+            let drift = ((currentEnergy - initialEnergy) / initialEnergy) * 100;
+
+            if (isNaN(drift) || Math.abs(initialEnergy) < 1e-4) {
+                driftEl.style.color = '#ff6464';
+                driftEl.innerText = "Energy Drift: NaN (Math Error)";
+            } else {
+                driftEl.style.color = Math.abs(drift) < 0.2 ? '#64ffda' : '#ff6464';
+                driftEl.innerText = `Energy Drift: ${drift >= 0 ? '+' : ''}${drift.toFixed(5)}%`;
+            }
+        }
+
+        function rk4Step(dt) {
+            const clone = (arr) => arr.slice();
+            let a1 = calculateAccelerations(angles, aVels);
+            let k1v = clone(a1), k1p = clone(aVels);
+            let midA1 = angles.map((a, i) => a + k1p[i] * (dt / 2));
+            let midV1 = aVels.map((v, i) => v + k1v[i] * (dt / 2));
+            let a2 = calculateAccelerations(midA1, midV1);
+            let k2v = clone(a2), k2p = clone(midV1);
+            let midA2 = angles.map((a, i) => a + k2p[i] * (dt / 2));
+            let midV2 = aVels.map((v, i) => v + k2v[i] * (dt / 2));
+            let a3 = calculateAccelerations(midA2, midV2);
+            let k3v = clone(a3), k3p = clone(midV2);
+            let endA = angles.map((a, i) => a + k3p[i] * dt);
+            let endV = aVels.map((v, i) => v + k3v[i] * dt);
+            let a4 = calculateAccelerations(endA, endV);
+            let k4v = clone(a4), k4p = clone(endV);
+
+            for (let i = 0; i < N; i++) {
+                aVels[i] += (dt / 6) * (k1v[i] + 2 * k2v[i] + 2 * k3v[i] + k4v[i]);
+                angles[i] += (dt / 6) * (k1p[i] + 2 * k2p[i] + 2 * k3p[i] + k4p[i]);
+            }
+        }
+
+        function calculateAccelerations(theta, omega) {
+            let M = [], C = [];
+
+            // Interaction Spring Force Calculations
+            let fx = 0, fy = 0;
+            if (draggedMass !== -1) {
+                let mx = 0, my = 0;
+                for (let m = 0; m <= draggedMass; m++) {
+                    mx += lengths[m] * Math.sin(theta[m]);
+                    my += lengths[m] * Math.cos(theta[m]);
+                }
+                let vx = 0, vy = 0;
+                for (let m = 0; m <= draggedMass; m++) {
+                    vx += lengths[m] * omega[m] * Math.cos(theta[m]);
+                    vy += -lengths[m] * omega[m] * Math.sin(theta[m]);
+                }
+
+                let targetX = mouseX - width / 2;
+                let targetY = mouseY - height / 3;
+
+                let K_spring = 20000;
+                let D_spring = 500;
+
+                fx = K_spring * (targetX - mx) - D_spring * vx;
+                fy = K_spring * (targetY - my) - D_spring * vy;
+            }
+
+            for (let i = 0; i < N; i++) {
+                M[i] = [];
+                let Ci = -mu[i] * g * lengths[i] * Math.sin(theta[i]);
+                let centrifugal = 0;
+
+                for (let j = 0; j < N; j++) {
+                    let diff = theta[i] - theta[j];
+                    M[i][j] = coeffMatrix[i][j] * Math.cos(diff);
+                    if (i === j) M[i][j] += 1e-6; // Regularization
+                    centrifugal += coeffMatrix[i][j] * Math.sin(diff) * omega[j] * omega[j];
+                }
+
+                let externalTorque = 0;
+                if (draggedMass !== -1 && i <= draggedMass) {
+                    externalTorque = fx * lengths[i] * Math.cos(theta[i]) - fy * lengths[i] * Math.sin(theta[i]);
+                }
+
+                C.push([Ci - centrifugal + externalTorque]);
+            }
+            return fastMatrixSolve(M, C);
+        }
+
+        function fastMatrixSolve(M, C) {
+            let n = M.length;
+            for (let i = 0; i < n; i++) {
+                let maxRow = i;
+                for (let k = i + 1; k < n; k++) if (Math.abs(M[k][i]) > Math.abs(M[maxRow][i])) maxRow = k;
+
+                [M[i], M[maxRow]] = [M[maxRow], M[i]];
+                [C[i], C[maxRow]] = [C[maxRow], C[i]];
+
+                for (let k = i + 1; k < n; k++) {
+                    let factor = M[k][i] / M[i][i];
+                    for (let j = i; j < n; j++) M[k][j] -= factor * M[i][j];
+                    C[k][0] -= factor * C[i][0];
+                }
+            }
+            let result = [];
+            for (let i = n - 1; i >= 0; i--) {
+                let sum = 0;
+                for (let j = i + 1; j < n; j++) sum += M[i][j] * result[j];
+                result[i] = (C[i][0] - sum) / M[i][i];
+            }
+            return result;
+        }
+    </script>
+</body>
+
+</html>
