@@ -15,7 +15,14 @@
 </head>
 
 <body>
-
+    <div id="controls" style="position: absolute; top: 10px; right: 10px; z-index: 100;">
+        <button id="toggleBtn"
+            style="padding: 10px 20px; font-size: 16px; cursor: pointer; background-color: rgba(50, 50, 50, 0.8); color: white; border: 1px solid #777; border-radius: 5px; font-family: sans-serif;"
+            onclick="window.sim_running = !window.sim_running; this.innerText = window.sim_running ? 'Pause' : 'Start';">Start</button>
+    </div>
+    <script>
+        window.sim_running = false;
+    </script>
     <div id="glowscript" class="glowscript">
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <link type="text/css" href="https://www.glowscript.org/css/redmond/2.1/jquery-ui.custom.css" rel="stylesheet" />
@@ -387,6 +394,7 @@
                     while (true) {
                         "87";
                         (await rate(1e3));
+                        if (!window.sim_running) continue;
                         "90";
                         var ρσ_Iter7 = bodies;
                         ρσ_Iter7 = ((typeof ρσ_Iter7[Symbol.iterator] === "function") ? (ρσ_Iter7 instanceof Map ? ρσ_Iter7.keys() : ρσ_Iter7) : Object.keys(ρσ_Iter7));
