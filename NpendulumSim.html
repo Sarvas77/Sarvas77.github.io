@@ -156,8 +156,8 @@
             groundLevel = 0;
             draggedMass = -1;
 
-            // Adaptive length based on N and screen size
-            let l = Math.min(120, (windowHeight * 0.45) / N);
+            // Adaptive length based on N and screen size. Reduced total size to fit entirely on screen
+            let l = Math.min(100, (windowHeight * 0.35) / N);
 
             for (let i = 0; i < N; i++) {
                 lengths.push(l);
@@ -205,7 +205,7 @@
             updateEnergyMeter();
 
             push();
-            translate(width / 2, height / 3);
+            translate(width / 1.7, height / 2);
             let x = 0, y = 0;
 
             // Draw links and masses
@@ -249,8 +249,8 @@
         }
 
         function mousePressed() {
-            let mx = mouseX - width / 2;
-            let my = mouseY - height / 3;
+            let mx = mouseX - width / 1.7;
+            let my = mouseY - height / 2;
             let x = 0, y = 0;
             let minDist = 40; // grab radius
             draggedMass = -1;
@@ -354,8 +354,8 @@
                     vy += -lengths[m] * omega[m] * Math.sin(theta[m]);
                 }
 
-                let targetX = mouseX - width / 2;
-                let targetY = mouseY - height / 3;
+                let targetX = mouseX - width / 1.7;
+                let targetY = mouseY - height / 2;
 
                 let K_spring = 20000;
                 let D_spring = 500;

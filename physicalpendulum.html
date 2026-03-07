@@ -18,17 +18,19 @@
 
         #ui-container {
             position: absolute;
-            top: 20px;
-            left: 20px;
+            top: 5px;
+            left: 5px;
             color: white;
             background: rgba(20, 20, 20, 0.85);
-            padding: 20px;
+            padding: 15px;
             border-radius: 12px;
             border: 1px solid #333;
             z-index: 10;
             backdrop-filter: blur(10px);
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
             min-width: 250px;
+            transform: scale(0.7);
+            transform-origin: top left;
         }
 
         .ui-row {
@@ -112,8 +114,8 @@
         <div class="ui-row"
             style="display: flex; gap: 10px; margin-top: 20px; border-top: 1px solid #333; padding-top: 15px;">
             <button id="play-pause-btn"
-                style="flex: 1; padding: 10px; background: #64ffda; color: #141414; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s;">
-                PAUSE
+                style="flex: 1; padding: 10px; background: #ffb86c; color: #141414; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s;">
+                START SIMULATION
             </button>
             <button id="reset-btn"
                 style="flex: 1; padding: 10px; background: #444; color: #fff; border: 1px solid #666; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s;">
@@ -151,7 +153,7 @@
         let k_bend = 0;
         let d_friction = 0;
         let isRopeMode = false;
-        let isPaused = false;
+        let isPaused = true;
         // ~150 deg fold limit, beyond which it violently collides to stop self-intersection
         const maxFoldAngle = 2.6;
         const k_collision = 50000000;
@@ -365,7 +367,8 @@
             updateEnergyMeter();
 
             push();
-            translate(width / 2, height / 3);
+            // Move pivot further right so it doesn't overlap with the UI on the left
+            translate(width / 2, height / 2.2);
             let x = 0, y = 0;
 
             if (isRopeMode) {
@@ -464,7 +467,7 @@
 
         function mousePressed() {
             let mx = mouseX - width / 2;
-            let my = mouseY - height / 3;
+            let my = mouseY - height / 2.2;
             let minDist = 40; // grab radius
             draggedMass = -1;
 
@@ -642,7 +645,7 @@
                 }
 
                 let targetX = mouseX - width / 2;
-                let targetY = mouseY - height / 3;
+                let targetY = mouseY - height / 2.2;
 
                 let K_spring = 20000;
                 let D_spring = 500;
@@ -762,7 +765,7 @@
 
             // Interaction
             let targetX = mouseX - width / 2;
-            let targetY = mouseY - height / 3;
+            let targetY = mouseY - height / 2.2;
 
             // Step 1: Integrate Verlet Positions
             for (let i = 0; i <= N; i++) {
