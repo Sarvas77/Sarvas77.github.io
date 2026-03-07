@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Fast WebGL Phase Map</title>
+    <style>
+        body {
+            background-color: #050505;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            color: white;
+            font-family: sans-serif;
+            flex-direction: column;
+        }
+
+        canvas {
+            border: 2px solid #333;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+            image-rendering: pixelated;
+        }
+
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(20, 20, 20, 0.85);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #444;
+            backdrop-filter: blur(5px);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label {
+            font-size: 14px;
+            color: #ddd;
+        }
+
+        select {
+            background: #222;
+            color: white;
+            border: 1px solid #555;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            outline: none;
+        }
+
+        select:hover {
+            background: #333;
+        }
+
+        #fps {
+            font-size: 18px;
+            font-family: monospace;
+            color: #4CAF50;
+            font-weight: bold;
+        }
+
+        .warning-text {
+            font-size: 12px;
+            color: #ffaaaa;
+            margin-top: 5px;
+            max-width: 250px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="ui">
+        <div class="control-group">
+            <label for="gridSize">Resolution (N x N Pendulums)</label>
+            <select id="gridSize">
+                <option value="100">100 x 100</option>
+                <option value="500">500 x 500</option>
+                <option value="1000" selected>1000 x 1000</option>
+                <option value="2000">2000 x 2000</option>
+                <option value="4000">4000 x 4000</option>
+            </select>
+            <div class="warning-text">Note: Resolutions above 1000x1000 require significant GPU compute and may crash on
+                lower-end devices.</div>
+        </div>
+        <div id="fps">FPS: 0</div>
+    </div>
+    <canvas id="simCanvas" width="4000" height="4000"
+        style="width: 100vw; height: 100vh; object-fit: contain;"></canvas>
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const gl = canvas.getContext('webgl2');
+
+        if (!gl) {
+            alert('WebGL 2 is not supported. Please use a modern browser.');
+        }
+
+        const ext = gl.getExtension('EXT_color_buffer_float');
+        if (!ext) {
+            alert('EXT_color_buffer_float not supported');
+        }
+
+        // 10000x10000 crashes most WebGL contexts (requires >3.2GB VRAM). 4000 is a safe upper bound (16 million pendulums).
+        let GRID_SIZE = 1000;
+
+        const vertexShaderSource = `#version 300 es
+        in vec2 a_position;
+        out vec2 v_texcoord;
+        void main() {
+            gl_Position = vec4(a_position, 0.0, 1.0);
+            v_texcoord = a_position * 0.5 + 0.5;
+        }`;
+
+        const computeFragmentShaderSource = `#version 300 es
+        precision highp float;
+        uniform sampler2D u_state;
+        in vec2 v_texcoord;
+        out vec4 outColor;
+
+        const float M1 = 1.0;
+        const float M2 = 1.0;
+        const float L1 = 1.0;
+        const float L2 = 1.0;
+        const float G = 9.81;
+        const float DT = 0.05;
+
+        vec4 derivative(vec4 state) {
+            float t1 = state.r;
+            float t2 = state.g;
+            float w1 = state.b;
+            float w2 = state.a;
+
+            float s1 = sin(t1);
+            float c1 = cos(t1);
+            float s2 = sin(t2);
+            float c2 = cos(t2);
+
+            float sd = sin(t1 - t2); // s1 * c2 - c1 * s2
+            float cd = cos(t1 - t2); // c1 * c2 + s1 * s2
+
+            float sin_t1_minus_2t2 = sin(t1 - 2.0 * t2); // sd * c2 - cd * s2
+            float cos_2delta = 2.0 * cd * cd - 1.0;
+
+            float num1_w1 = -G * (2.0 * M1 + M2) * s1;
+            float num2_w1 = -M2 * G * sin_t1_minus_2t2;
+            float num3_w1 = -2.0 * sd * M2 * (w2 * w2 * L2 + w1 * w1 * L1 * cd);
+            float den_w1 = L1 * (2.0 * M1 + M2 - M2 * cos_2delta);
+            float dw1 = (num1_w1 + num2_w1 + num3_w1) / den_w1;
+
+            float num1_w2 = 2.0 * sd;
+            float num2_w2 = (w1 * w1 * L1 * (M1 + M2)) + G * (M1 + M2) * c1 + w2 * w2 * L2 * M2 * cd;
+            float den_w2 = L2 * (2.0 * M1 + M2 - M2 * cos_2delta);
+            float dw2 = (num1_w2 * num2_w2) / den_w2;
+
+            return vec4(w1, w2, dw1, dw2);
+        }
+
+        void main() {
+            vec4 s = texture(u_state, v_texcoord);
+            
+            vec4 k1 = derivative(s);
+            vec4 s2 = s + 0.5 * DT * k1;
+            vec4 k2 = derivative(s2);
+            vec4 s3 = s + 0.5 * DT * k2;
+            vec4 k3 = derivative(s3);
+            vec4 s4 = s + DT * k3;
+            vec4 k4 = derivative(s4);
+
+            vec4 ds = (DT / 6.0) * (k1 + 2.0 * k2 + 2.0 * k3 + k4);
+            
+            outColor = s + ds;
+        }`;
+
+        const renderFragmentShaderSource = `#version 300 es
+        precision highp float;
+        uniform sampler2D u_state;
+        in vec2 v_texcoord;
+        out vec4 outColor;
+
+        const float PI = 3.14159265358979323846;
+
+        float normalizeAngle(float angle) {
+            float a = mod(angle, 2.0 * PI);
+            if (a < 0.0) a += 2.0 * PI;
+            return a;
+        }
+
+        void main() {
+            vec4 s = texture(u_state, v_texcoord);
+            
+            float r = normalizeAngle(s.r) / (2.0 * PI);
+            float g = normalizeAngle(s.g) / (2.0 * PI);
+            float b = abs(sin(s.b + s.a));
+            
+            outColor = vec4(r, g, b, 1.0);
+        }`;
+
+        function createShader(gl, type, source) {
+            const shader = gl.createShader(type);
+            gl.shaderSource(shader, source);
+            gl.compileShader(shader);
+            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                console.error(gl.getShaderInfoLog(shader));
+                gl.deleteShader(shader);
+                return null;
+            }
+            return shader;
+        }
+
+        function createProgram(gl, vertexShader, fragmentShader) {
+            const program = gl.createProgram();
+            gl.attachShader(program, vertexShader);
+            gl.attachShader(program, fragmentShader);
+            gl.linkProgram(program);
+            if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+                console.error(gl.getProgramInfoLog(program));
+                gl.deleteProgram(program);
+                return null;
+            }
+            return program;
+        }
+
+        const vs = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
+        const computeFs = createShader(gl, gl.FRAGMENT_SHADER, computeFragmentShaderSource);
+        const renderFs = createShader(gl, gl.FRAGMENT_SHADER, renderFragmentShaderSource);
+
+        const computeProgram = createProgram(gl, vs, computeFs);
+        const renderProgram = createProgram(gl, vs, renderFs);
+
+        // Map positions (x, y)
+        const positions = new Float32Array([
+            -1, -1,
+            1, -1,
+            -1, 1,
+            -1, 1,
+            1, -1,
+            1, 1,
+        ]);
+
+        const positionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+
+        const vaoCompute = gl.createVertexArray();
+        gl.bindVertexArray(vaoCompute);
+        gl.enableVertexAttribArray(0); // position is 0
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+        const vaoRender = gl.createVertexArray();
+        gl.bindVertexArray(vaoRender);
+        gl.enableVertexAttribArray(0); // position is 0
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+        function createTexture() {
+            const tex = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_2D, tex);
+            // using Nearest as we don't want interpolation for GPGPU
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            return tex;
+        }
+
+        let textures = [];
+        let fbos = [];
+        let currentRead = 0;
+        let currentWrite = 1;
+
+        function initSimulation(size) {
+            GRID_SIZE = size;
+            canvas.width = size;
+            canvas.height = size;
+
+            const initialData = new Float32Array(GRID_SIZE * GRID_SIZE * 4);
+            for (let y = 0; y < GRID_SIZE; y++) {
+                for (let x = 0; x < GRID_SIZE; x++) {
+                    let i = (y * GRID_SIZE + x) * 4;
+                    initialData[i + 0] = (x / GRID_SIZE) * 2.0 * Math.PI - Math.PI; // t1
+                    initialData[i + 1] = (y / GRID_SIZE) * 2.0 * Math.PI - Math.PI; // t2
+                    initialData[i + 2] = 0.0; // w1
+                    initialData[i + 3] = 0.0; // w2
+                }
+            }
+
+            if (textures.length > 0) {
+                gl.deleteTexture(textures[0]);
+                gl.deleteTexture(textures[1]);
+                gl.deleteFramebuffer(fbos[0]);
+                gl.deleteFramebuffer(fbos[1]);
+            }
+
+            textures = [createTexture(), createTexture()];
+            fbos = [gl.createFramebuffer(), gl.createFramebuffer()];
+
+            for (let i = 0; i < 2; ++i) {
+                gl.bindTexture(gl.TEXTURE_2D, textures[i]);
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, GRID_SIZE, GRID_SIZE, 0, gl.RGBA, gl.FLOAT, i === 0 ? initialData : null);
+
+                gl.bindFramebuffer(gl.FRAMEBUFFER, fbos[i]);
+                gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, textures[i], 0);
+
+                if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+                    console.error("Framebuffer not complete!");
+                }
+            }
+
+            currentRead = 0;
+            currentWrite = 1;
+        }
+
+        initSimulation(GRID_SIZE);
+
+        document.getElementById('gridSize').addEventListener('change', (e) => {
+            const newSize = parseInt(e.target.value);
+            initSimulation(newSize);
+        });
+
+        const uStateCompute = gl.getUniformLocation(computeProgram, "u_state");
+        const uStateRender = gl.getUniformLocation(renderProgram, "u_state");
+
+        let lastTime = performance.now();
+        let frameCount = 0;
+
+        function renderLoop() {
+            let now = performance.now();
+            frameCount++;
+            if (now - lastTime >= 1000) {
+                document.getElementById('fps').innerText = 'FPS: ' + frameCount;
+                frameCount = 0;
+                lastTime = now;
+            }
+
+            // Step 1: Compute physics
+            gl.useProgram(computeProgram);
+            gl.bindVertexArray(vaoCompute);
+
+            gl.bindFramebuffer(gl.FRAMEBUFFER, fbos[currentWrite]);
+            gl.viewport(0, 0, GRID_SIZE, GRID_SIZE);
+
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, textures[currentRead]);
+            gl.uniform1i(uStateCompute, 0);
+
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+            // Step 2: Render to screen
+            gl.useProgram(renderProgram);
+            gl.bindVertexArray(vaoRender);
+
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            gl.viewport(0, 0, canvas.width, canvas.height);
+
+            // Texture to render is now the one we just wrote to
+            gl.bindTexture(gl.TEXTURE_2D, textures[currentWrite]);
+            gl.uniform1i(uStateRender, 0);
+
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+            // Swap read & write
+            currentRead = currentWrite;
+            currentWrite = 1 - currentWrite;
+
+            requestAnimationFrame(renderLoop);
+        }
+
+        renderLoop();
+    </script>
+</body>
+
+</html>
