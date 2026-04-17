@@ -1,159 +1,215 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-    <title>My Physics Simulations</title>
     <meta charset="UTF-8">
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+    <title>Physics Engines | Sarvas77</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
     <style>
-        body {
-            /* Applied the new font and a deep space radial gradient */
-            font-family: 'Space Grotesk', sans-serif;
-            background: radial-gradient(circle at top, #1b1b28, #0f0f15 40%, #050508 100%);
-            color: #ececec;
-            text-align: center;
-            margin: 0;
-            padding: 0;
-            min-height: 100vh;
+        :root {
+            --bg-color: #050505;
+            --card-bg: #0d0d0d;
+            --border-color: #1f1f1f;
+            --text-primary: #ededed;
+            --text-secondary: #888888;
+            --accent: #ffffff;
         }
 
-        /* The new Hero intro section */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
         header {
-            padding: 80px 20px 40px 20px;
+            padding: 100px 0 60px 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 60px;
         }
 
         header h1 {
-            font-size: 3.5em;
-            margin: 0;
-            color: #ffffff;
-            letter-spacing: -1px;
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin: 0 0 16px 0;
+            color: var(--accent);
+            letter-spacing: -0.02em;
         }
 
         header p {
-            font-size: 1.2em;
-            color: #888;
+            font-size: 1.125rem;
+            color: var(--text-secondary);
             max-width: 600px;
-            margin: 10px auto;
+            margin: 0;
         }
 
-        /* Updated headers for the specific projects */
-        h2.project-title {
-            font-size: 2.2em;
-            margin-top: 0;
-            margin-bottom: 5px;
+        .sim-list {
+            display: flex;
+            flex-direction: column;
+            gap: 100px;
+            padding-bottom: 80px;
         }
 
-        .neon-orange {
-            color: #ffaa55;
-            text-shadow: 0 0 15px rgba(255, 170, 85, 0.4);
+        .sim-card {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
         }
 
-        .neon-blue {
-            color: #55aaff;
-            text-shadow: 0 0 15px rgba(85, 170, 255, 0.4);
+        .sim-header {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
 
-        .neon-green {
-            color: #55ffaa;
-            text-shadow: 0 0 15px rgba(85, 255, 170, 0.4);
+        .project-title {
+            font-size: 1.25rem;
+            font-weight: 500;
+            margin: 0;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: -0.02em;
         }
 
-        .neon-cyan {
-            color: #55ffff;
-            text-shadow: 0 0 15px rgba(85, 255, 255, 0.4);
+        .project-desc {
+            margin: 0;
+            color: var(--text-secondary);
+            font-size: 1rem;
         }
 
-        .neon-purple {
-            color: #d455ff;
-            text-shadow: 0 0 15px rgba(212, 85, 255, 0.4);
+        .iframe-wrapper {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            width: 100%;
+            /* Subtle depth instead of aggressive neon glow */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            transition: border-color 0.3s ease;
         }
 
-        .neon-red {
-            color: #ff5555;
-            text-shadow: 0 0 15px rgba(255, 85, 85, 0.4);
-        }
-
-        p.project-desc {
-            margin-bottom: 30px;
-            color: #aaa;
-            font-size: 1.1em;
-        }
-
-        /* Glassmorphism Card Style for the containers */
-        .sim-container {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 20px;
-            padding: 40px 20px;
-            margin: 0 auto 80px auto;
-            max-width: 1080px;
-            /* Prevents it from stretching too wide on big monitors */
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(10px);
+        .iframe-wrapper:hover {
+            border-color: #444;
         }
 
         iframe {
-            border: 2px solid #222;
-            border-radius: 12px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
-            max-width: 100%;
-            background-color: black;
+            width: 100%;
+            display: block;
+            border: none;
+            background-color: #000;
+        }
+
+        /* Specific aspect ratios to match your old fixed dimensions seamlessly */
+        .ar-10-8 { aspect-ratio: 10 / 8; }
+        .ar-10-7 { aspect-ratio: 10 / 7; }
+
+        @media (max-width: 768px) {
+            header {
+                padding: 60px 0 40px 0;
+            }
+            .sim-list {
+                gap: 60px;
+            }
+            header h1 {
+                font-size: 2rem;
+            }
         }
 
         footer {
-            margin-top: 20px;
-            padding: 60px 20px;
-            color: rgba(255, 255, 255, 0.15);
-            font-size: 2vw;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 2px;
+            border-top: 1px solid var(--border-color);
+            padding: 40px 0;
+            text-align: center;
+            color: #444;
+            font-size: 0.875rem;
+            font-family: 'JetBrains Mono', monospace;
         }
     </style>
 </head>
-
 <body>
 
-    <header>
-        <h1>Physics & Computational Engines by Sarvas77</h1>
-        <p>A collection of N-body and vector mechanics simulations built with Python, SciPy, and WebGL.</p>
-    </header>
+    <div class="container">
+        <header>
+            <h1>Physics & Computational Engines</h1>
+            <p>A collection of N-body and vector mechanics simulations built with Python, SciPy, and WebGL by Sarvas77.</p>
+        </header>
 
-    <div class="sim-container">
-        <h2 class="project-title neon-cyan">Double Pendulum Fractal Phase Map</h2>
-        <p class="project-desc">Phase map rendering millions of double pendulums at high fps.</p>
-        <iframe src="Double_pendulum_fractal.html" width="1000" height="800" allowfullscreen></iframe>
-    </div>
+        <div class="sim-list">
+            
+            <article class="sim-card">
+                <div class="sim-header">
+                    <h2 class="project-title">01 / Double Pendulum Fractal Phase Map</h2>
+                    <p class="project-desc">Phase map rendering millions of double pendulums at high fps.</p>
+                </div>
+                <div class="iframe-wrapper">
+                    <iframe src="Double_pendulum_fractal.html" class="ar-10-8" allowfullscreen></iframe>
+                </div>
+            </article>
 
-    <div class="sim-container">
-        <h2 class="project-title neon-purple">Interactive N-Pendulum</h2>
-        <p class="project-desc">A stable, interactive N-link pendulum simulation utilizing the RK4 integrator.</p>
-        <iframe src="NpendulumSim.html" width="1000" height="800" allowfullscreen></iframe>
-    </div>
+            <article class="sim-card">
+                <div class="sim-header">
+                    <h2 class="project-title">02 / Interactive N-Pendulum</h2>
+                    <p class="project-desc">A stable, interactive N-link pendulum simulation utilizing the RK4 integrator.</p>
+                </div>
+                <div class="iframe-wrapper">
+                    <iframe src="NpendulumSim.html" class="ar-10-8" allowfullscreen></iframe>
+                </div>
+            </article>
 
-    <div class="sim-container">
-        <h2 class="project-title neon-red">Physical Pendulum & Rope Physics</h2>
-        <p class="project-desc">A stable physical pendulum and true continuous mass rope simulation.</p>
-        <iframe src="physicalpendulum.html" width="1000" height="800" allowfullscreen></iframe>
-    </div>
+            <article class="sim-card">
+                <div class="sim-header">
+                    <h2 class="project-title">03 / Physical Pendulum & Rope Physics</h2>
+                    <p class="project-desc">A stable physical pendulum and true continuous mass rope simulation.</p>
+                </div>
+                <div class="iframe-wrapper">
+                    <iframe src="physicalpendulum.html" class="ar-10-8" allowfullscreen></iframe>
+                </div>
+            </article>
 
-    <div class="sim-container">
-        <h2 class="project-title neon-orange">3D Galaxy Simulation</h2>
-        <p class="project-desc">A 3D N-body orbital engine with a massive central black hole.</p>
-        <iframe src="GalaxySim.html" width="1000" height="800" allowfullscreen></iframe>
-    </div>
+            <article class="sim-card">
+                <div class="sim-header">
+                    <h2 class="project-title">04 / 3D Galaxy Simulation</h2>
+                    <p class="project-desc">A 3D N-body orbital engine with a massive central black hole.</p>
+                </div>
+                <div class="iframe-wrapper">
+                    <iframe src="GalaxySim.html" class="ar-10-8" allowfullscreen></iframe>
+                </div>
+            </article>
 
-    <div class="sim-container">
-        <h2 class="project-title neon-blue">Chaotic 3-Body Dance</h2>
-        <p class="project-desc">An elastic collision ring handling a chaotic 3-body system.</p>
-        <iframe src="ThreebodysimRing.html" width="1000" height="700" allowfullscreen></iframe>
-    </div>
+            <article class="sim-card">
+                <div class="sim-header">
+                    <h2 class="project-title">05 / Chaotic 3-Body Dance</h2>
+                    <p class="project-desc">An elastic collision ring handling a chaotic 3-body system.</p>
+                </div>
+                <div class="iframe-wrapper">
+                    <iframe src="ThreebodysimRing.html" class="ar-10-7" allowfullscreen></iframe>
+                </div>
+            </article>
 
-    <div class="sim-container">
-        <h2 class="project-title neon-green">Fully 3D 4-Body Stick Orbit</h2>
-        <p class="project-desc">A 3D vector mechanics engine calculating momentum, gravity, and angular torque.</p>
-        <iframe src="fourbodystick.html" width="1000" height="800" allowfullscreen></iframe>
+            <article class="sim-card">
+                <div class="sim-header">
+                    <h2 class="project-title">06 / Fully 3D 4-Body Stick Orbit</h2>
+                    <p class="project-desc">A 3D vector mechanics engine calculating momentum, gravity, and angular torque.</p>
+                </div>
+                <div class="iframe-wrapper">
+                    <iframe src="fourbodystick.html" class="ar-10-8" allowfullscreen></iframe>
+                </div>
+            </article>
+
+        </div>
+
     </div>
 
     <footer>
@@ -161,5 +217,4 @@
     </footer>
 
 </body>
-
 </html>
