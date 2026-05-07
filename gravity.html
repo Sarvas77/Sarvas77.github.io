@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Gravity & Orbits | Physics Engines</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="app-container">
+    
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <a href="index.html" class="brand">
+            <div class="brand-dot"></div>
+            Sarvas77
+        </a>
+
+        <div class="nav-section-title">Overview</div>
+        <ul class="nav-links">
+            <li><a href="index.html" class="nav-link">Dashboard</a></li>
+        </ul>
+
+        <div class="nav-section-title">Simulations</div>
+        <ul class="nav-links">
+            <li><a href="phasemap.html" class="nav-link">Pendulum Phasemap</a></li>
+            <li><a href="pendulums.html" class="nav-link">Rope & Pendulums</a></li>
+            <li><a href="gravity.html" class="nav-link active">Gravity & Orbits</a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="content">
+        <header>
+            <h1>Gravity & Orbits</h1>
+            <p>3D vector mechanics engines calculating momentum, gravity, and chaotic N-body systems.</p>
+        </header>
+
+        <div class="sim-list">
+            <article class="sim-card">
+                <div class="sim-header">
+                    <h2 class="project-title">3D Galaxy Simulation</h2>
+                    <p class="project-desc">A 3D N-body orbital engine with a massive central black hole.</p>
+                </div>
+                <div class="iframe-wrapper">
+                    <iframe src="GalaxySim.html" class="ar-10-8" allowfullscreen></iframe>
+                </div>
+            </article>
+
+            <article class="sim-card">
+                <div class="sim-header">
+                    <h2 class="project-title">Chaotic 3-Body Dance</h2>
+                    <p class="project-desc">An elastic collision ring handling a chaotic 3-body system.</p>
+                </div>
+                <div class="iframe-wrapper">
+                    <iframe src="ThreebodysimRing.html" class="ar-10-7" allowfullscreen></iframe>
+                </div>
+            </article>
+
+            <article class="sim-card">
+                <div class="sim-header">
+                    <h2 class="project-title">Fully 3D 4-Body Stick Orbit</h2>
+                    <p class="project-desc">A 3D vector mechanics engine calculating momentum, gravity, and angular torque.</p>
+                </div>
+                <div class="iframe-wrapper">
+                    <iframe src="fourbodystick.html" class="ar-10-8" allowfullscreen></iframe>
+                </div>
+            </article>
+        </div>
+    </main>
+
+</div>
+
+</body>
+</html>

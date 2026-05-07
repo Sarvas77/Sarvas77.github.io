@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard | Physics Engines</title>
+    <title>Pendulum Phasemap | Physics Engines</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,12 +22,12 @@
 
         <div class="nav-section-title">Overview</div>
         <ul class="nav-links">
-            <li><a href="index.html" class="nav-link active">Dashboard</a></li>
+            <li><a href="index.html" class="nav-link">Dashboard</a></li>
         </ul>
 
         <div class="nav-section-title">Simulations</div>
         <ul class="nav-links">
-            <li><a href="phasemap.html" class="nav-link">Pendulum Phasemap</a></li>
+            <li><a href="phasemap.html" class="nav-link active">Pendulum Phasemap</a></li>
             <li><a href="pendulums.html" class="nav-link">Rope & Pendulums</a></li>
             <li><a href="gravity.html" class="nav-link">Gravity & Orbits</a></li>
         </ul>
@@ -36,25 +36,16 @@
     <!-- Main Content -->
     <main class="content">
         <header>
-            <h1>Physics & Computational Engines</h1>
-            <p>A collection of high-performance N-body, vector mechanics, and orbital simulations built with WebGL and Custom Solvers.</p>
+            <h1>Pendulum Phasemap</h1>
+            <p>A high-performance rendering of a double pendulum phase space.</p>
         </header>
 
-        <div class="dashboard-grid">
-            <a href="phasemap.html" class="dash-card">
-                <h3>01 / Pendulum Phasemap</h3>
-                <p>Millions of double pendulums calculated to generate an interactive fractal phase map.</p>
-            </a>
-
-            <a href="pendulums.html" class="dash-card">
-                <h3>02 / Rope & Pendulums</h3>
-                <p>Stable N-link pendulums using RK4 integrators and Position-Based Dynamics for rope physics.</p>
-            </a>
-
-            <a href="gravity.html" class="dash-card">
-                <h3>03 / Gravity & Orbits</h3>
-                <p>3D vector mechanics engines calculating momentum, gravity, and chaotic N-body systems.</p>
-            </a>
+        <div class="sim-list">
+            <article class="sim-card">
+                <div class="iframe-wrapper">
+                    <iframe src="Double_pendulum_fractal.html" class="ar-10-8" allowfullscreen></iframe>
+                </div>
+            </article>
         </div>
     </main>
 

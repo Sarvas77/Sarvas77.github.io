@@ -131,45 +131,47 @@
     </div>
 
     <script>
-        // --- PHYSICS ENGINE START ---
-        let TOTAL_MASS = 10;
+        // --- UI & RENDER LOGIC START ---
         let TOTAL_LENGTH = 0;
         let N = 4;
-        let accumulatedFrictionLoss = 0;
-        let lengths = [];
-        let masses = [];
-        let angles = [];
-        let aVels = [];
-
-        const g = 981;
         let traceHistory = [];
-        let mu = [], coeffMatrix = [];
 
-        // Energy Tracking Variables
-        let initialEnergy = 0, currentEnergy = 0, groundLevel = 0;
+        // State received from worker
+        let state = {
+            isRopeMode: false,
+            angles: [],
+            lengths: [],
+            masses: [],
+            rope_x: [],
+            rope_y: [],
+            currentEnergy: 0,
+            initialEnergy: 0,
+            accumulatedFrictionLoss: 0
+        };
 
         // Interaction
         let draggedMass = -1;
-        let k_bend = 0;
-        let d_friction = 0;
         let isRopeMode = false;
         let isPaused = true;
-        // ~150 deg fold limit, beyond which it violently collides to stop self-intersection
-        const maxFoldAngle = 2.6;
-        const k_collision = 50000000;
-
-        // ROPE MODE Variables (Position-Based Dynamics)
-        let ropeParticles = [];
-        let ropeSegments = [];
-        const ROPE_ITERATIONS = 50;
+        let physicsWorker;
 
         function setup() {
             createCanvas(windowWidth, windowHeight);
             TOTAL_LENGTH = windowHeight * 0.45;
 
+            // Initialize Web Worker
+            physicsWorker = new Worker('worker_physical.js');
+
+            physicsWorker.onmessage = function (e) {
+                if (e.data.type === 'state') {
+                    state = e.data;
+                }
+            };
+
             document.getElementById('n-slider').addEventListener('input', function (e) {
                 let newN = parseInt(e.target.value);
                 document.getElementById('n-display').innerText = newN;
+                N = newN;
                 if (isRopeMode) {
                     initRope(newN);
                 } else {
@@ -178,16 +180,15 @@
             });
 
             document.getElementById('k-slider').addEventListener('input', function (e) {
-                k_bend = parseInt(e.target.value);
+                let k_bend = parseInt(e.target.value);
                 document.getElementById('k-display').innerText = k_bend;
-                initialEnergy = calculateTotalEnergy();
+                physicsWorker.postMessage({ type: 'update_params', k_bend: k_bend, d_friction: parseInt(document.getElementById('d-slider').value) * 10000, recalcEnergy: true });
             });
 
             document.getElementById('d-slider').addEventListener('input', function (e) {
-                // Scale the friction up massively so the 0-1000 slider actually
-                // provides meaningful stopping torque against the huge inertia.
-                d_friction = parseInt(e.target.value) * 10000;
+                let d_friction = parseInt(e.target.value) * 10000;
                 document.getElementById('d-display').innerText = parseInt(e.target.value);
+                physicsWorker.postMessage({ type: 'update_params', k_bend: parseInt(document.getElementById('k-slider').value), d_friction: d_friction, recalcEnergy: false });
             });
 
             document.getElementById('rope-mode').addEventListener('change', function (e) {
@@ -198,11 +199,10 @@
                 if (isRopeMode) {
                     nSlider.max = 100;
                     nSlider.value = 50;
+                    N = 50;
                     document.getElementById('n-display').innerText = 50;
 
-                    // Disable stiffness for true rope physics to prevent PBD explosion
                     kSlider.disabled = true;
-                    k_bend = 0;
                     document.getElementById('k-display').innerText = "0 (Rope Mode)";
                     kSlider.style.opacity = '0.5';
 
@@ -211,12 +211,11 @@
                     nSlider.max = 15;
                     let safeN = Math.min(15, parseInt(nSlider.value));
                     nSlider.value = safeN;
+                    N = safeN;
                     document.getElementById('n-display').innerText = safeN;
 
-                    // Re-enable stiffness
                     kSlider.disabled = false;
-                    k_bend = parseInt(kSlider.value);
-                    document.getElementById('k-display').innerText = k_bend;
+                    document.getElementById('k-display').innerText = parseInt(kSlider.value);
                     kSlider.style.opacity = '1.0';
 
                     initPendulum(safeN);
@@ -228,11 +227,12 @@
                 let btn = e.target;
                 if (isPaused) {
                     btn.innerText = "PLAY";
-                    btn.style.background = "#ffb86c"; // Orange for paused
+                    btn.style.background = "#ffb86c";
                 } else {
                     btn.innerText = "PAUSE";
-                    btn.style.background = "#64ffda"; // Mint for active
+                    btn.style.background = "#64ffda";
                 }
+                physicsWorker.postMessage({ type: 'pause', isPaused: isPaused });
             });
 
             document.getElementById('reset-btn').addEventListener('click', function () {
@@ -243,175 +243,74 @@
                 }
             });
 
-            k_bend = parseInt(document.getElementById('k-slider').value);
-            d_friction = parseInt(document.getElementById('d-slider').value) * 10000;
             initPendulum(parseInt(document.getElementById('n-slider').value));
         }
 
         function initPendulum(newN) {
-            N = newN;
-            lengths = [];
-            masses = [];
-            angles = [];
-            aVels = [];
             traceHistory = [];
-            groundLevel = 0;
             draggedMass = -1;
-            accumulatedFrictionLoss = 0;
 
-            // Divide continuous total mass and length evenly based on N
-            let l = TOTAL_LENGTH / N;
-            let m = TOTAL_MASS / N;
-
-            for (let i = 0; i < N; i++) {
-                lengths.push(l);
-                masses.push(m);
-                angles.push(Math.PI / 2); // Start horizontal
-                aVels.push(0);
-                groundLevel -= l;
-            }
-
-            precomputeConstants();
-            initialEnergy = calculateTotalEnergy();
-            currentEnergy = initialEnergy;
+            physicsWorker.postMessage({
+                type: 'init_rigid',
+                N: newN,
+                totalLength: TOTAL_LENGTH,
+                k_bend: parseInt(document.getElementById('k-slider').value),
+                d_friction: parseInt(document.getElementById('d-slider').value) * 10000
+            });
         }
 
         function initRope(newN) {
-            N = newN;
             traceHistory = [];
             draggedMass = -1;
 
-            ropeParticles = [];
-            ropeSegments = [];
-
-            let l = TOTAL_LENGTH / N;
-            let m = TOTAL_MASS / N;
-
-            for (let i = 0; i <= N; i++) {
-                // Add a tiny initial droop to prevent PBD straight-line locking
-                // A perfectly horizontal chain cannot fall because the vertical constraint gradient is 0
-                let droop = (i > 0) ? (i * i * 0.05) : 0;
-
-                // p: current, old: previous for Verlet
-                ropeParticles.push({
-                    x: l * i, y: droop,
-                    old_x: l * i, old_y: droop,
-                    mass: i === 0 ? 0 : m, // 0 mass means fixed pin
-                    pinned: i === 0
-                });
-            }
-
-            for (let i = 0; i < N; i++) {
-                ropeSegments.push({
-                    p1: ropeParticles[i],
-                    p2: ropeParticles[i + 1],
-                    length: l
-                });
-            }
-
-            initialEnergy = 0;
-            currentEnergy = 0;
-            updateEnergyMeter(); // Disabled for PBD visually to avoid math error UI conflicts
-        }
-
-        function precomputeConstants() {
-            mu = [];
-            coeffMatrix = [];
-            for (let i = 0; i < N; i++) {
-                let sum = 0;
-                // For a continuous rod, the center of mass is halfway down, 
-                // so rod i contributes m_i / 2 to its own cross-coupling term
-                // and m_k for all k > i.
-                sum += masses[i] / 2;
-                for (let k = i + 1; k < N; k++) sum += masses[k];
-                mu[i] = sum;
-            }
-            for (let i = 0; i < N; i++) {
-                coeffMatrix[i] = [];
-                for (let j = 0; j < N; j++) {
-                    if (i === j) {
-                        // Diagonal element: self-inertia of rod i around its hinge + mass of other rods
-                        let sumSelf = masses[i] / 3; // Integral of x^2 dm = m*L^2 / 3
-                        for (let k = i + 1; k < N; k++) sumSelf += masses[k];
-                        coeffMatrix[i][j] = sumSelf * lengths[i] * lengths[j];
-                    } else {
-                        // Off-diagonal element: coupling
-                        let maxIdx = Math.max(i, j);
-                        coeffMatrix[i][j] = mu[maxIdx] * lengths[i] * lengths[j];
-                    }
-                }
-            }
+            physicsWorker.postMessage({
+                type: 'init_rope',
+                N: newN,
+                totalLength: TOTAL_LENGTH,
+                d_friction: parseInt(document.getElementById('d-slider').value) * 10000
+            });
         }
 
         function draw() {
             background(20);
-
-            if (isRopeMode) {
-                stepRopePBD();
-            } else {
-                if (!isPaused) {
-                    // STABILITY: Dynamically scale sub-steps to prevent energy leaks and NaN math explosions.
-                    // Higher N = much smaller mass segments & higher frequency components = needs smaller dt
-                    // Higher stiffness (k_bend) = needs MUCH smaller dt
-                    let subSteps = 5 + Math.floor(N * 2) + Math.floor(k_bend / 50000);
-                    if (subSteps > 80) subSteps = 80; // Hard cap to prevent lag
-
-                    let dt = 0.015 / subSteps;
-                    for (let step = 0; step < subSteps; step++) {
-                        rk4Step(dt);
-                    }
-                    currentEnergy = calculateTotalEnergy();
-                }
-            }
-
             updateEnergyMeter();
 
             push();
-            // Move pivot further right so it doesn't overlap with the UI on the left
             translate(width / 2, height / 2.2);
             let x = 0, y = 0;
 
-            if (isRopeMode) {
-                // Draw a continuous smooth cubic spline curve for rope
+            if (state.isRopeMode) {
+                if (state.rope_x.length === 0) { pop(); return; }
+
                 noFill();
                 stroke(200, 200, 200, 240);
                 strokeWeight(12);
                 strokeJoin(ROUND);
                 strokeCap(ROUND);
 
-                let ropePoints = [{ x: 0, y: 0 }];
-                let rx = 0, ry = 0;
-                for (let i = 0; i <= N; i++) {
-                    rx = ropeParticles[i].x;
-                    ry = ropeParticles[i].y;
-                    ropePoints.push({ x: rx, y: ry });
-                }
-
                 beginShape();
-                // Duplicate first point for Catmull-Rom spline control
-                curveVertex(ropePoints[0].x, ropePoints[0].y);
-                for (let i = 0; i < ropePoints.length; i++) {
-                    curveVertex(ropePoints[i].x, ropePoints[i].y);
+                curveVertex(state.rope_x[0], state.rope_y[0]);
+                for (let i = 0; i < state.rope_x.length; i++) {
+                    curveVertex(state.rope_x[i], state.rope_y[i]);
                 }
-                // Duplicate last point
-                let lastP = ropePoints[ropePoints.length - 1];
-                curveVertex(lastP.x, lastP.y);
+                let lastIdx = state.rope_x.length - 1;
+                curveVertex(state.rope_x[lastIdx], state.rope_y[lastIdx]);
                 endShape();
 
-                // Draw drag highlight on tip if needed
-                if (draggedMass !== -1) {
+                if (draggedMass !== -1 && draggedMass + 1 < state.rope_x.length) {
                     fill(100, 255, 200);
                     noStroke();
-                    circle(ropePoints[draggedMass + 1].x, ropePoints[draggedMass + 1].y, 16);
+                    circle(state.rope_x[draggedMass + 1], state.rope_y[draggedMass + 1], 16);
                 }
 
-                // Trace history for last point
-                x = lastP.x;
-                y = lastP.y;
-                traceHistory.push({ x: x, y: y });
-                if (traceHistory.length > 500) traceHistory.shift();
+                x = state.rope_x[lastIdx];
+                y = state.rope_y[lastIdx];
 
-                // Draw trace history for PBD rope
+                if (!isPaused || draggedMass !== -1) {
+                    traceHistory.push({ x: x, y: y });
+                    if (traceHistory.length > 500) traceHistory.shift();
+                }
+
                 noFill();
                 strokeWeight(2);
                 stroke(100, 200, 255, 150);
@@ -422,12 +321,13 @@
                 return;
             }
 
-            // Standard rigid pendulum drawing
-            for (let i = 0; i < N; i++) {
-                let nextX = x + lengths[i] * Math.sin(angles[i]);
-                let nextY = y + lengths[i] * Math.cos(angles[i]);
+            // Rigid Pendulum Drawing
+            if (state.angles.length === 0) { pop(); return; }
 
-                // Highlight grabbed mass
+            for (let i = 0; i < state.angles.length; i++) {
+                let nextX = x + state.lengths[i] * Math.sin(state.angles[i]);
+                let nextY = y + state.lengths[i] * Math.cos(state.angles[i]);
+
                 if (i === draggedMass) {
                     stroke(100, 255, 200);
                 } else {
@@ -437,11 +337,10 @@
                 strokeWeight(12);
                 line(x, y, nextX, nextY);
 
-                // Small joint/tip circles
                 noStroke();
                 fill(80);
                 circle(x, y, 16);
-                if (i === N - 1) {
+                if (i === state.angles.length - 1) {
                     fill(120);
                     circle(nextX, nextY, 16);
                 }
@@ -449,13 +348,12 @@
                 x = nextX;
                 y = nextY;
 
-                if (i === N - 1) {
+                if (i === state.angles.length - 1 && (!isPaused || draggedMass !== -1)) {
                     traceHistory.push({ x: x, y: y });
                     if (traceHistory.length > 500) traceHistory.shift();
                 }
             }
 
-            // Draw trace history
             noFill();
             strokeWeight(2);
             stroke(100, 200, 255, 150);
@@ -468,22 +366,25 @@
         function mousePressed() {
             let mx = mouseX - width / 2;
             let my = mouseY - height / 2.2;
-            let minDist = 40; // grab radius
+            let minDist = 40;
             draggedMass = -1;
 
-            if (isRopeMode) {
-                for (let i = 0; i <= N; i++) {
-                    let d = dist(mx, my, ropeParticles[i].x, ropeParticles[i].y);
-                    if (d < minDist && !ropeParticles[i].pinned) {
+            if (state.isRopeMode) {
+                if (state.rope_x.length === 0) return;
+                for (let i = 0; i < state.rope_x.length; i++) {
+                    let d = dist(mx, my, state.rope_x[i], state.rope_y[i]);
+                    // i=0 is pinned
+                    if (d < minDist && i !== 0) {
                         minDist = d;
-                        draggedMass = i;
+                        draggedMass = i - 1; // Because rope nodes are N+1
                     }
                 }
             } else {
+                if (state.angles.length === 0) return;
                 let x = 0, y = 0;
-                for (let i = 0; i < N; i++) {
-                    x += lengths[i] * Math.sin(angles[i]);
-                    y += lengths[i] * Math.cos(angles[i]);
+                for (let i = 0; i < state.angles.length; i++) {
+                    x += state.lengths[i] * Math.sin(state.angles[i]);
+                    y += state.lengths[i] * Math.cos(state.angles[i]);
                     let d = dist(mx, my, x, y);
                     if (d < minDist) {
                         minDist = d;
@@ -491,76 +392,52 @@
                     }
                 }
             }
+
+            if (draggedMass !== -1) {
+                physicsWorker.postMessage({
+                    type: 'drag',
+                    draggedMass: draggedMass,
+                    targetX: mx,
+                    targetY: my
+                });
+            }
+        }
+
+        function mouseDragged() {
+            if (draggedMass !== -1) {
+                let mx = mouseX - width / 2;
+                let my = mouseY - height / 2.2;
+                physicsWorker.postMessage({
+                    type: 'drag',
+                    draggedMass: draggedMass,
+                    targetX: mx,
+                    targetY: my
+                });
+            }
         }
 
         function mouseReleased() {
             if (draggedMass !== -1) {
-                if (!isRopeMode) {
-                    // Critical Fix: Flush the accumulated loss fully so energy UI
-                    // strictly resets to exactly +0.00% without carrying over old heat
-                    initialEnergy = calculateTotalEnergy();
-                    accumulatedFrictionLoss = 0;
-                }
                 draggedMass = -1;
+                physicsWorker.postMessage({ type: 'release' });
             }
         }
 
         function windowResized() {
             resizeCanvas(windowWidth, windowHeight);
-            initPendulum(N);
-        }
-
-        function calculateTotalEnergy() {
-            if (N === 0) return 0;
-            let K = 0, U = 0;
-            for (let i = 0; i < N; i++) {
-                // To find the velocity of the center of mass of rod i:
-                // First find the velocity of the tip of the previous rod
-                let v_tip_x = 0, v_tip_y = 0, y_tip = 0;
-                for (let k = 0; k < i; k++) {
-                    v_tip_x += lengths[k] * aVels[k] * Math.cos(angles[k]);
-                    v_tip_y += -lengths[k] * aVels[k] * Math.sin(angles[k]);
-                    y_tip += -lengths[k] * Math.cos(angles[k]);
-                }
-
-                // Add the velocity of the center of mass relative to the hinge
-                let v_cm_x = v_tip_x + (lengths[i] / 2) * aVels[i] * Math.cos(angles[i]);
-                let v_cm_y = v_tip_y - (lengths[i] / 2) * aVels[i] * Math.sin(angles[i]);
-                let y_cm = y_tip - (lengths[i] / 2) * Math.cos(angles[i]);
-
-                // Translational kinetic energy of the center of mass
-                let K_trans = 0.5 * masses[i] * (v_cm_x * v_cm_x + v_cm_y * v_cm_y);
-
-                // Rotational kinetic energy about the center of mass (1/12 * M * L^2)
-                let K_rot = 0.5 * (masses[i] / 12) * lengths[i] * lengths[i] * aVels[i] * aVels[i];
-
-                K += K_trans + K_rot;
-                U += masses[i] * g * (y_cm - groundLevel);
+            TOTAL_LENGTH = windowHeight * 0.45;
+            if (isRopeMode) {
+                initRope(N);
+            } else {
+                initPendulum(N);
             }
-
-            // Bending Potential Energy
-            let U_bend = 0;
-            for (let i = 0; i < N - 1; i++) {
-                let dTheta = angles[i + 1] - angles[i];
-                dTheta = Math.atan2(Math.sin(dTheta), Math.cos(dTheta));
-
-                // Base stiffness, appropriately scaled inversely by segment length 
-                // to maintain continuous stiffness behavior regardless of N
-                let segmentStiffness = k_bend * (N / lengths[i]);
-                U_bend += 0.5 * segmentStiffness * dTheta * dTheta;
-            }
-
-            return K + U + U_bend;
         }
-
-        // Track exact heat dissipated by internal friction 
-        // to maintain our Energy Drift meter's numerical integrity
 
         function updateEnergyMeter() {
             let textEl = document.getElementById('energy-text');
             let barEl = document.getElementById('energy-bar');
 
-            if (isRopeMode) {
+            if (state.isRopeMode) {
                 textEl.style.color = '#aaaaaa';
                 textEl.innerText = "N/A (Rope Mode)";
                 barEl.style.background = '#aaaaaa';
@@ -575,11 +452,10 @@
                 return;
             }
 
-            // A perfect integrator with physical friction means current + heat_lost = initial
-            let totalConserved = currentEnergy + accumulatedFrictionLoss;
-            let drift = ((totalConserved - initialEnergy) / initialEnergy) * 100;
+            let totalConserved = state.currentEnergy + state.accumulatedFrictionLoss;
+            let drift = ((totalConserved - state.initialEnergy) / state.initialEnergy) * 100;
 
-            if (isNaN(drift) || Math.abs(initialEnergy) < 1e-4) {
+            if (isNaN(drift) || Math.abs(state.initialEnergy) < 1e-4) {
                 textEl.style.color = '#ff6464';
                 textEl.innerText = "NaN (Math Error)";
                 barEl.style.width = '100%';
@@ -589,281 +465,11 @@
                 textEl.style.color = isStable ? '#64ffda' : '#ff6464';
                 textEl.innerText = `${drift >= 0 ? '+' : ''}${drift.toFixed(5)}%`;
 
-                // Map drift to bar width: 0% drift -> 50% width
-                // +/- 5% drift -> fills/empties bar
                 let mappedWidth = 50 + (drift / 5.0) * 50;
                 mappedWidth = Math.max(0, Math.min(100, mappedWidth));
                 barEl.style.width = `${mappedWidth}%`;
                 barEl.style.background = isStable ? '#64ffda' : '#ff6464';
             }
-        }
-
-        function rk4Step(dt) {
-            const clone = (arr) => arr.slice();
-            let a1 = calculateAccelerations(angles, aVels, dt);
-            let k1v = clone(a1.accels), k1p = clone(aVels);
-            let midA1 = angles.map((a, i) => a + k1p[i] * (dt / 2));
-            let midV1 = aVels.map((v, i) => v + k1v[i] * (dt / 2));
-            let a2 = calculateAccelerations(midA1, midV1, dt);
-            let k2v = clone(a2.accels), k2p = clone(midV1);
-            let midA2 = angles.map((a, i) => a + k2p[i] * (dt / 2));
-            let midV2 = aVels.map((v, i) => v + k2v[i] * (dt / 2));
-            let a3 = calculateAccelerations(midA2, midV2, dt);
-            let k3v = clone(a3.accels), k3p = clone(midV2);
-            let endA = angles.map((a, i) => a + k3p[i] * dt);
-            let endV = aVels.map((v, i) => v + k3v[i] * dt);
-            let a4 = calculateAccelerations(endA, endV, dt);
-            let k4v = clone(a4.accels), k4p = clone(endV);
-
-            // Accumulate friction power loss over dt using midpoint (a2)
-            for (let i = 0; i < N; i++) {
-                accumulatedFrictionLoss -= a2.frictionTorques[i] * midV1[i] * dt;
-            }
-
-            for (let i = 0; i < N; i++) {
-                aVels[i] += (dt / 6) * (k1v[i] + 2 * k2v[i] + 2 * k3v[i] + k4v[i]);
-                angles[i] += (dt / 6) * (k1p[i] + 2 * k2p[i] + 2 * k3p[i] + k4p[i]);
-            }
-        }
-
-        function calculateAccelerations(theta, omega, dt_sim) {
-            let M = [], C = [];
-
-            // Interaction Spring Force Calculations
-            let fx = 0, fy = 0;
-            if (draggedMass !== -1) {
-                // Approximate dragged mass location as the tip of the dragged rod
-                let mx = 0, my = 0;
-                for (let m = 0; m <= draggedMass; m++) {
-                    mx += lengths[m] * Math.sin(theta[m]);
-                    my += lengths[m] * Math.cos(theta[m]);
-                }
-                let vx = 0, vy = 0;
-                for (let m = 0; m <= draggedMass; m++) {
-                    vx += lengths[m] * omega[m] * Math.cos(theta[m]);
-                    vy += -lengths[m] * omega[m] * Math.sin(theta[m]);
-                }
-
-                let targetX = mouseX - width / 2;
-                let targetY = mouseY - height / 2.2;
-
-                let K_spring = 20000;
-                let D_spring = 500;
-
-                fx = K_spring * (targetX - mx) - D_spring * vx;
-                fy = K_spring * (targetY - my) - D_spring * vy;
-            }
-
-            // Compute bending, collision, and internal friction torques
-            let structureTorques = new Array(N).fill(0);
-            let currentFrictionTorques = new Array(N).fill(0);
-
-            for (let i = 0; i < N - 1; i++) {
-                // Bend/Collision
-                let dTheta = theta[i + 1] - theta[i];
-                dTheta = Math.atan2(Math.sin(dTheta), Math.cos(dTheta));
-
-                let segmentStiffness = k_bend * (N / lengths[i]);
-                let torque = segmentStiffness * dTheta;
-
-                // STABILITY FIX: Cap structure torque based on relative inertia 
-                // to prevent integration explosion at large N or high k_bend
-                let I_rel = coeffMatrix[i + 1][i + 1];
-                let max_safe_torque = (I_rel * 2.0) / (dt_sim * dt_sim);
-                if (Math.abs(torque) > max_safe_torque) {
-                    torque = Math.sign(torque) * max_safe_torque;
-                }
-
-                // Internal Friction (Velocity dependent damping)
-                // Opposes the relative angular velocity between the two segments
-                let dOmega = omega[i + 1] - omega[i];
-                let frictionTorque = d_friction * dOmega * (N / lengths[i]) * 0.01; // Dramatically scale down base friction torque to prevent huge swings
-
-                // STABILITY FIX: Cap the maximum friction torque to prevent RK4 explicit ODE explosion
-                // The explicit step is unstable if c * dt > 2.8. We limit it to 0.5 for absolute safety.
-                let max_damping_torque = (I_rel * Math.abs(dOmega)) / dt_sim;
-
-                let safe_limit = max_damping_torque * 0.5;
-                if (Math.abs(frictionTorque) > safe_limit) {
-                    frictionTorque = Math.sign(frictionTorque) * safe_limit;
-                }
-
-                // Apply equal and opposite torques
-                structureTorques[i + 1] -= torque;
-                structureTorques[i] += torque;
-
-                currentFrictionTorques[i + 1] -= frictionTorque;
-                currentFrictionTorques[i] += frictionTorque;
-            }
-
-            for (let i = 0; i < N; i++) {
-                M[i] = [];
-                // Gravitational term uses the new mu[i] which represents effective mass 
-                // below hinge i, with rod i's mass contributing only m_i/2.
-                let Ci = -mu[i] * g * lengths[i] * Math.sin(theta[i]);
-                let centrifugal = 0;
-
-                for (let j = 0; j < N; j++) {
-                    let diff = theta[i] - theta[j];
-                    M[i][j] = coeffMatrix[i][j] * Math.cos(diff);
-                    if (i === j) M[i][j] += 1e-6; // Regularization
-                    centrifugal += coeffMatrix[i][j] * Math.sin(diff) * omega[j] * omega[j];
-                }
-
-                let externalTorque = 0;
-                if (draggedMass !== -1 && i <= draggedMass) {
-                    // Force is applied to the tip of draggedMass, so rods i <= draggedMass feel the torque
-                    externalTorque = fx * lengths[i] * Math.cos(theta[i]) - fy * lengths[i] * Math.sin(theta[i]);
-                }
-
-                C.push([Ci - centrifugal + externalTorque + structureTorques[i] + currentFrictionTorques[i]]);
-            }
-            return {
-                accels: fastMatrixSolve(M, C),
-                frictionTorques: currentFrictionTorques
-            };
-        }
-
-        function fastMatrixSolve(M, C) {
-            let n = M.length;
-            for (let i = 0; i < n; i++) {
-                let maxRow = i;
-                for (let k = i + 1; k < n; k++) if (Math.abs(M[k][i]) > Math.abs(M[maxRow][i])) maxRow = k;
-
-                [M[i], M[maxRow]] = [M[maxRow], M[i]];
-                [C[i], C[maxRow]] = [C[maxRow], C[i]];
-
-                // Prevent division by zero or extremely small numbers that cause NaN explosions
-                if (Math.abs(M[i][i]) < 1e-12) {
-                    M[i][i] = 1e-12 * Math.sign(M[i][i] || 1);
-                }
-
-                for (let k = i + 1; k < n; k++) {
-                    let factor = M[k][i] / M[i][i];
-                    for (let j = i; j < n; j++) M[k][j] -= factor * M[i][j];
-                    C[k][0] -= factor * C[i][0];
-                }
-            }
-            let result = [];
-            for (let i = n - 1; i >= 0; i--) {
-                let sum = 0;
-                for (let j = i + 1; j < n; j++) sum += M[i][j] * result[j];
-
-                if (Math.abs(M[i][i]) < 1e-12) {
-                    M[i][i] = 1e-12 * Math.sign(M[i][i] || 1);
-                }
-                result[i] = (C[i][0] - sum) / M[i][i];
-            }
-            return result;
-        }
-
-        // ==========================================
-        // POSITION-BASED DYNAMICS (PBD) ROPE PHYSICS
-        // ==========================================
-        function stepRopePBD() {
-            let dt = isPaused ? 0 : 0.015;
-
-            // Interaction
-            let targetX = mouseX - width / 2;
-            let targetY = mouseY - height / 2.2;
-
-            // Step 1: Integrate Verlet Positions
-            for (let i = 0; i <= N; i++) {
-                let p = ropeParticles[i];
-                if (p.pinned) continue;
-
-                let vx = isPaused ? 0 : (p.x - p.old_x);
-                let vy = isPaused ? 0 : (p.y - p.old_y);
-
-                // Internal friction mapped to simple velocity damping
-                // We use an exponential curve so low slider values (e.g. 8) give very light damping
-                // while higher values give the sluggish molasses effect.
-                let rawFrictionSlider = d_friction / 10000; // 0 to 100
-                // Using power of 5 to make the low-end slider extremely gentle. Max drag is capped at 0.5.
-                let drag = 1.0 - Math.pow(rawFrictionSlider / 100.0, 5) * 0.5;
-                vx *= drag;
-                vy *= drag;
-
-                p.old_x = p.x;
-                p.old_y = p.y;
-
-                // Gravity + interaction force
-                let ax = 0;
-                let ay = isPaused ? 0 : g * 0.5;
-
-                if (i === draggedMass) {
-                    // Direct manipulation when simulation is active or paused
-                    // Instantly teleport the node to the mouse, overriding physics
-                    p.x = targetX;
-                    p.y = targetY;
-
-                    if (isPaused) {
-                        // Prevent explosive velocity upon hitting play
-                        p.old_x = p.x;
-                        p.old_y = p.y;
-                    }
-                }
-
-                p.x += vx + ax * dt * dt;
-                p.y += vy + ay * dt * dt;
-            }
-
-            // Step 2: Resolve Constraints (PBD relaxation)
-            let stiffnessBendRelax = Math.min(0.95, k_bend / 500000);
-
-            for (let iter = 0; iter < ROPE_ITERATIONS; iter++) {
-
-                // Segment Max Length Enforcement
-                for (let seg of ropeSegments) {
-                    let dx = seg.p2.x - seg.p1.x;
-                    let dy = seg.p2.y - seg.p1.y;
-                    let dist = Math.sqrt(dx * dx + dy * dy);
-                    if (dist === 0) continue;
-
-                    let diff = (seg.length - dist) / dist;
-                    let tx = dx * diff * 0.5;
-                    let ty = dy * diff * 0.5;
-
-                    if (!seg.p1.pinned) {
-                        seg.p1.x -= tx;
-                        seg.p1.y -= ty;
-                    }
-                    if (!seg.p2.pinned) {
-                        seg.p2.x += tx;
-                        seg.p2.y += ty;
-                    }
-                }
-
-                // Bending Resistance (Angle Constraints)
-                if (stiffnessBendRelax > 0) {
-                    for (let i = 0; i < N - 1; i++) {
-                        let p0 = ropeParticles[i];
-                        let p1 = ropeParticles[i + 1];
-                        let p2 = ropeParticles[i + 2];
-
-                        let v1x = p1.x - p0.x;
-                        let v1y = p1.y - p0.y;
-                        let v2x = p2.x - p1.x;
-                        let v2y = p2.y - p1.y;
-
-                        // Target is a straight line
-                        let cross = v1x * v2y - v1y * v2x;
-                        if (Math.abs(cross) > 1e-4) {
-                            let restoreFactor = stiffnessBendRelax * 0.1;
-
-                            // Nudge nodes to straighten
-                            if (!p0.pinned) { p0.x -= v2y * restoreFactor; p0.y += v2x * restoreFactor; }
-                            if (!p1.pinned) { p1.x += (v2y - v1y) * restoreFactor; p1.y -= (v2x - v1x) * restoreFactor; }
-                            if (!p2.pinned) { p2.x += v1y * restoreFactor; p2.y -= v1x * restoreFactor; }
-                        }
-                    }
-                }
-            }
-
-            // Sync node position specifically for trace history
-            let lastP = ropeParticles[N];
-            ropeParticles[0].x = 0; ropeParticles[0].y = 0; // lock pin
-            // we will draw PBD positions explicitly from ropeParticles directly instead in `draw()`
         }
     </script>
 </body>
