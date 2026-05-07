@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fluid Simulation</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; background: #000; }
+        canvas { display: block; }
+        #controls {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #64ffda;
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 8px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        Move mouse to swirl the neon fluid.
+    </div>
+    <script>
+        const N = 64;
+        let scale;
+        let worker;
+        
+        // Fluid fields
+        let Vx = new Float32Array((N + 2) * (N + 2));
+        let Vy = new Float32Array((N + 2) * (N + 2));
+
+        let particles = [];
+        const NUM_PARTICLES = 3000;
+
+        class Particle {
+            constructor() {
+                this.respawn();
+                this.life = random(0, 200); // Stagger initial lifespans
+            }
+
+            respawn() {
+                this.pos = createVector(random(width), random(height));
+                this.vel = createVector(0, 0);
+                this.life = random(100, 300);
+            }
+
+            update() {
+                this.life--;
+                if (this.life < 0) {
+                    this.respawn();
+                }
+
+                // Find grid cell
+                let i = Math.floor(this.pos.x / scale) + 1;
+                let j = Math.floor(this.pos.y / scale) + 1;
+
+                i = constrain(i, 1, N);
+                j = constrain(j, 1, N);
+
+                let idx = i + (N + 2) * j;
+
+                // Apply fluid velocity
+                let force = createVector(Vx[idx], Vy[idx]);
+                force.mult(0.8); // Tune speed
+
+                this.vel.add(force);
+                this.vel.limit(6); // Max speed
+                this.pos.add(this.vel);
+                this.vel.mult(0.9); // Friction
+
+                // Wrap edges
+                if (this.pos.x < 0) this.pos.x += width;
+                if (this.pos.x > width) this.pos.x -= width;
+                if (this.pos.y < 0) this.pos.y += height;
+                if (this.pos.y > height) this.pos.y -= height;
+            }
+
+            draw() {
+                let speed = this.vel.mag();
+                
+                // Color maps to speed (Slow = Purple, Fast = Cyan/Mint)
+                let r = map(speed, 0, 6, 100, 100);
+                let g = map(speed, 0, 6, 0, 255);
+                let b = map(speed, 0, 6, 255, 218);
+                
+                // Fade out as life ends
+                let alpha = map(this.life, 0, 20, 0, 200, true);
+                
+                stroke(r, g, b, alpha);
+                strokeWeight(1.5);
+                point(this.pos.x, this.pos.y);
+            }
+        }
+
+        function setup() {
+            createCanvas(windowWidth, windowHeight);
+            scale = width / N;
+            pixelDensity(1);
+            background(0);
+
+            for (let i = 0; i < NUM_PARTICLES; i++) {
+                particles.push(new Particle());
+            }
+
+            worker = new Worker('worker_fluid.js');
+            worker.onmessage = function(e) {
+                if (e.data.type === 'update') {
+                    Vx = e.data.Vx;
+                    Vy = e.data.Vy;
+                }
+            };
+            worker.postMessage({ type: 'init', size: N });
+        }
+
+        function draw() {
+            // Fade background for trails
+            fill(0, 15);
+            noStroke();
+            rect(0, 0, width, height);
+            
+            // Mouse Interaction
+            if (mouseIsPressed || (pmouseX !== mouseX || pmouseY !== mouseY)) {
+                let i = Math.floor(mouseX / scale) + 1;
+                let j = Math.floor(mouseY / scale) + 1;
+                let vx = (mouseX - pmouseX) * 2;
+                let vy = (mouseY - pmouseY) * 2;
+                
+                worker.postMessage({
+                    type: 'input',
+                    i: i,
+                    j: j,
+                    amount: 0,
+                    vx: vx,
+                    vy: vy
+                });
+            }
+
+            // Draw Particles
+            for (let p of particles) {
+                p.update();
+                p.draw();
+            }
+        }
+
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight);
+            scale = width / N;
+            background(0); // Clear trails on resize
+        }
+    </script>
+</body>
+</html>

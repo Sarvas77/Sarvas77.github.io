@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fluid Dynamics | Physics Engines</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="ui.js" defer></script>
+</head>
+<body>
+
+<div class="app-container">
+    
+    <!-- Sidebar Injected via JS -->
+    <nav class="sidebar" id="global-sidebar"></nav>
+
+    <!-- Main Content -->
+    <main class="content">
+        <header>
+            <h1>Fluid Dynamics</h1>
+            <p>High-performance Eulerian fluid solvers simulating real-time Navier-Stokes equations.</p>
+        </header>
+
+        <div class="sim-list">
+            <article class="sim-card">
+                <div class="sim-header">
+                    <h2 class="project-title">Cyber-Fluid Solver</h2>
+                    <p class="project-desc">Real-time smoke and liquid simulation using a grid-based velocity field solver.</p>
+                </div>
+                <div class="iframe-wrapper">
+                    <iframe src="FluidSim.html" class="ar-10-8" allowfullscreen></iframe>
+                </div>
+            </article>
+
+            <article class="sim-card">
+                <div class="sim-header">
+                    <h2 class="project-title">Soft-Body "Jelly" Physics</h2>
+                    <p class="project-desc">A highly stable Verlet mass-spring lattice simulating 2D deformable bodies.</p>
+                </div>
+                <div class="iframe-wrapper">
+                    <iframe src="SoftBodySim.html" class="ar-10-8" allowfullscreen></iframe>
+                </div>
+            </article>
+        </div>
+    </main>
+</div>
+
+</body>
+</html>

@@ -8,30 +8,14 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <script src="ui.js" defer></script>
 </head>
 <body>
 
 <div class="app-container">
     
-    <!-- Sidebar -->
-    <nav class="sidebar">
-        <a href="index.html" class="brand">
-            <div class="brand-dot"></div>
-            Sarvas77
-        </a>
-
-        <div class="nav-section-title">Overview</div>
-        <ul class="nav-links">
-            <li><a href="index.html" class="nav-link">Dashboard</a></li>
-        </ul>
-
-        <div class="nav-section-title">Simulations</div>
-        <ul class="nav-links">
-            <li><a href="phasemap.html" class="nav-link active">Pendulum Phasemap</a></li>
-            <li><a href="pendulums.html" class="nav-link">Rope & Pendulums</a></li>
-            <li><a href="gravity.html" class="nav-link">Gravity & Orbits</a></li>
-        </ul>
-    </nav>
+    <!-- Sidebar Injected via JS -->
+    <nav class="sidebar" id="global-sidebar"></nav>
 
     <!-- Main Content -->
     <main class="content">

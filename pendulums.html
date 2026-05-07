@@ -1,69 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Rope & Pendulums | Physics Engines</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <script src="ui.js" defer></script>
 </head>
+
 <body>
 
-<div class="app-container">
-    
-    <!-- Sidebar -->
-    <nav class="sidebar">
-        <a href="index.html" class="brand">
-            <div class="brand-dot"></div>
-            Sarvas77
-        </a>
+    <div class="app-container">
 
-        <div class="nav-section-title">Overview</div>
-        <ul class="nav-links">
-            <li><a href="index.html" class="nav-link">Dashboard</a></li>
-        </ul>
+        <!-- Sidebar Injected via JS -->
+        <nav class="sidebar" id="global-sidebar"></nav>
 
-        <div class="nav-section-title">Simulations</div>
-        <ul class="nav-links">
-            <li><a href="phasemap.html" class="nav-link">Pendulum Phasemap</a></li>
-            <li><a href="pendulums.html" class="nav-link active">Rope & Pendulums</a></li>
-            <li><a href="gravity.html" class="nav-link">Gravity & Orbits</a></li>
-        </ul>
-    </nav>
+        <!-- Main Content -->
+        <main class="content">
+            <header>
+                <h1>Rope & Pendulums</h1>
+                <p>Interactive simulations featuring RK4 integration and Position-Based Dynamics for rigid and flexible
+                    bodies.</p>
+            </header>
 
-    <!-- Main Content -->
-    <main class="content">
-        <header>
-            <h1>Rope & Pendulums</h1>
-            <p>Interactive simulations featuring RK4 integration and Position-Based Dynamics for rigid and flexible bodies.</p>
-        </header>
+            <div class="sim-list">
+                <article class="sim-card">
+                    <div class="sim-header">
+                        <h2 class="project-title">Interactive N-Pendulum</h2>
+                        <p class="project-desc">A stable, interactive N-link pendulum simulation utilizing the RK4
+                            integrator.</p>
+                    </div>
+                    <div class="iframe-wrapper">
+                        <iframe src="NpendulumSim.html" class="ar-10-8" allowfullscreen></iframe>
+                    </div>
+                </article>
 
-        <div class="sim-list">
-            <article class="sim-card">
-                <div class="sim-header">
-                    <h2 class="project-title">Interactive N-Pendulum</h2>
-                    <p class="project-desc">A stable, interactive N-link pendulum simulation utilizing the RK4 integrator.</p>
-                </div>
-                <div class="iframe-wrapper">
-                    <iframe src="NpendulumSim.html" class="ar-10-8" allowfullscreen></iframe>
-                </div>
-            </article>
+                <article class="sim-card">
+                    <div class="sim-header">
+                        <h2 class="project-title">Physical Pendulum & Rope Physics</h2>
+                        <p class="project-desc">A stable physical pendulum and true continuous mass rope simulation.</p>
+                    </div>
+                    <div class="iframe-wrapper">
+                        <iframe src="physicalpendulum.html" class="ar-10-8" allowfullscreen></iframe>
+                    </div>
+                </article>
+            </div>
+        </main>
 
-            <article class="sim-card">
-                <div class="sim-header">
-                    <h2 class="project-title">Physical Pendulum & Rope Physics</h2>
-                    <p class="project-desc">A stable physical pendulum and true continuous mass rope simulation.</p>
-                </div>
-                <div class="iframe-wrapper">
-                    <iframe src="physicalpendulum.html" class="ar-10-8" allowfullscreen></iframe>
-                </div>
-            </article>
-        </div>
-    </main>
-
-</div>
+    </div>
 
 </body>
+
 </html>
