@@ -3,403 +3,445 @@
 <head>
     <meta charset="UTF-8">
     <title>3D Stable Orbits</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         body { margin: 0; padding: 0; overflow: hidden; background: #050505; }
         canvas { display: block; }
+        #ui-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 10;
+        }
         #controls {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            color: #ededed;
-            font-family: 'JetBrains Mono', monospace;
-            background: rgba(13, 13, 13, 0.85);
-            padding: 15px;
-            border-radius: 8px;
-            border: 1px solid #1f1f1f;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            z-index: 10;
+            position: absolute; top: 20px; left: 20px;
+            color: #ededed; font-family: 'JetBrains Mono', monospace, sans-serif;
+            background: rgba(13, 13, 13, 0.85); padding: 20px; border-radius: 12px;
+            border: 1px solid #1f1f1f; display: flex; flex-direction: column; gap: 12px;
+            backdrop-filter: blur(10px); box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            pointer-events: auto;
         }
-        select, button {
-            background: rgba(255, 255, 255, 0.05);
-            color: #64ffda;
-            border: 1px solid #64ffda;
-            padding: 5px 10px;
-            font-family: 'JetBrains Mono', monospace;
-            border-radius: 4px;
-            cursor: pointer;
-            outline: none;
+        select {
+            background: rgba(255, 255, 255, 0.05); color: #64ffda;
+            border: 1px solid rgba(100, 255, 218, 0.3); padding: 8px 12px;
+            font-family: inherit; font-size: 14px; border-radius: 6px;
+            cursor: pointer; outline: none; transition: all 0.2s ease; appearance: none;
         }
-        select:hover, button:hover {
-            background: rgba(100, 255, 218, 0.1);
-        }
-        .help-text {
-            color: #888;
-            font-size: 0.8rem;
-            margin-top: 5px;
-        }
+        select:hover { background: rgba(100, 255, 218, 0.1); border-color: #64ffda; }
+        select:focus { box-shadow: 0 0 10px rgba(100, 255, 218, 0.2); border-color: #64ffda; }
+        select option { background: #0d0d0d; color: #64ffda; }
+        label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #888; }
+        .help-text { color: #666; font-size: 11px; margin-top: 5px; line-height: 1.4; }
     </style>
-    <!-- GlowScript requirements -->
-    <link type="text/css" href="https://www.glowscript.org/css/redmond/2.1/jquery-ui.custom.css" rel="stylesheet" />
-    <link type="text/css" href="https://www.glowscript.org/css/ide.css" rel="stylesheet" />
-    <script type="text/javascript" src="https://www.glowscript.org/lib/jquery/2.1/jquery.min.js"></script>
-    <script type="text/javascript" src="https://www.glowscript.org/lib/jquery/2.1/jquery-ui.custom.min.js"></script>
-    <script type="text/javascript" src="https://www.glowscript.org/package/glow.3.2.min.js"></script>
-    <script type="text/javascript" src="https://www.glowscript.org/package/RSrun.3.2.min.js"></script>
 </head>
 <body>
-    <div id="controls">
-        <label for="configSelect">Orbital Configuration:</label>
-        <select id="configSelect" onchange="window.changeConfig(this.value)">
-            <option value="figure8">Figure-8 (3-Body)</option>
-            <option value="butterfly">Butterfly (3-Body)</option>
-            <option value="moth">Moth (3-Body)</option>
-            <option value="yinyang">Yin-Yang (3-Body)</option>
-            <option value="binary">Binary Star System</option>
-            <option value="sunEarthMoon">Sun-Earth-Moon</option>
-            <option value="trojans">Lagrange Trojans</option>
-        </select>
-        <div class="help-text">Right-click + drag to spin.<br>Scroll to zoom.</div>
+    <div id="ui-container">
+        <div id="controls">
+            <label for="configSelect">Orbital Configuration</label>
+            <select id="configSelect">
+                <option value="figure8">Figure-8 (3-Body)</option>
+                <option value="butterfly">Butterfly (3-Body)</option>
+                <option value="moth">Moth (3-Body)</option>
+                <option value="yinyang">Yin-Yang (3-Body)</option>
+                <option value="binary">Binary Star System</option>
+                <option value="sunEarthMoon">Sun-Earth-Moon</option>
+                <option value="trojans">Lagrange Trojans</option>
+            </select>
+            <div class="help-text">Left Click + Drag to rotate<br>Scroll to zoom</div>
+        </div>
     </div>
 
-    <div id="glowscript" class="glowscript"></div>
+    <!-- Three.js Dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 
-    <script type="text/javascript">
-        window.sim_running = false;
-        window.current_config = "figure8";
-        window.changeConfig = function(val) {
-            window.current_config = val;
-        };
+    <script>
+        const MAX_TRAIL_LENGTH = 350;
 
-        // Listen for start/stop from parent
-        window.addEventListener('message', function(e) {
-            if (e.data.type === 'start') {
-                window.sim_running = true;
-            } else if (e.data.type === 'stop') {
-                window.sim_running = false;
+        class Body {
+            constructor(pos, vel, mass, radius, colorHex) {
+                this.m = mass;
+                this.pos = pos.clone();
+                this.v = vel.clone();
+                
+                const geo = new THREE.SphereGeometry(radius, 32, 32);
+                const mat = new THREE.MeshBasicMaterial({ color: colorHex });
+                this.mesh = new THREE.Mesh(geo, mat);
+                this.mesh.position.copy(this.pos);
+                
+                const trailGeo = new THREE.BufferGeometry();
+                this.trailPositions = new Float32Array(MAX_TRAIL_LENGTH * 3);
+                for(let i=0; i<MAX_TRAIL_LENGTH; i++) {
+                    this.trailPositions[i*3] = this.pos.x;
+                    this.trailPositions[i*3+1] = this.pos.y;
+                    this.trailPositions[i*3+2] = this.pos.z;
+                }
+                trailGeo.setAttribute('position', new THREE.BufferAttribute(this.trailPositions, 3));
+                
+                const trailMat = new THREE.LineBasicMaterial({ 
+                    color: colorHex, 
+                    transparent: true, 
+                    opacity: 0.6,
+                    blending: THREE.AdditiveBlending 
+                });
+                this.trail = new THREE.Line(trailGeo, trailMat);
             }
-        });
-        
-        ;(function () {
-            async function __main__() {
-                "use strict";
-                var scene = canvas({title: "", width: window.innerWidth, height: window.innerHeight, background: color.gray(0.05)});
-                scene.camera.pos = vec(0, 0, 800);
-                scene.ambient = color.gray(0.2);
-                scene.autoscale = false;
-                scene.center = vec(0, 0, 0);
 
+            destroy() {
+                if(this.mesh && this.mesh.parent) this.mesh.parent.remove(this.mesh);
+                if(this.trail && this.trail.parent) this.trail.parent.remove(this.trail);
+                if(this.mesh.geometry) this.mesh.geometry.dispose();
+                if(this.mesh.material) this.mesh.material.dispose();
+                if(this.trail.geometry) this.trail.geometry.dispose();
+                if(this.trail.material) this.trail.material.dispose();
+            }
 
-                var bodies = [];
-                var G = 1.0;
-                var dt = 0.01;
-
-                function rotate3D(v, pitch, yaw, roll) {
-                    var y1 = v.y*Math.cos(pitch) - v.z*Math.sin(pitch);
-                    var z1 = v.y*Math.sin(pitch) + v.z*Math.cos(pitch);
-                    var x2 = v.x*Math.cos(yaw) + z1*Math.sin(yaw);
-                    var z2 = -v.x*Math.sin(yaw) + z1*Math.cos(yaw);
-                    var x3 = x2*Math.cos(roll) - y1*Math.sin(roll);
-                    var y3 = x2*Math.sin(roll) + y1*Math.cos(roll);
-                    return vec(x3, y3, z2);
+            updateTrail() {
+                for(let i = MAX_TRAIL_LENGTH - 1; i > 0; i--) {
+                    this.trailPositions[i*3] = this.trailPositions[(i-1)*3];
+                    this.trailPositions[i*3+1] = this.trailPositions[(i-1)*3+1];
+                    this.trailPositions[i*3+2] = this.trailPositions[(i-1)*3+2];
                 }
+                this.trailPositions[0] = this.pos.x;
+                this.trailPositions[1] = this.pos.y;
+                this.trailPositions[2] = this.pos.z;
+                
+                this.trail.geometry.attributes.position.needsUpdate = true;
+            }
+        }
 
-                function clear_bodies() {
-                    for (var i = 0; i < bodies.length; i++) {
-                        var b = bodies[i];
-                        b.visible = false;
-                        if (b.glow) b.glow.visible = false;
-                        if (b.light) b.light.visible = false;
-                        b.clear_trail();
-                    }
-                    bodies = [];
+        let scene, camera, renderer, composer, controls;
+        let bodies = [];
+        let isRunning = false;
+        let G = 1.0;
+        let dt = 0.01;
+        let currentConfig = 'figure8';
+        let trailUpdateTimer = 0;
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x050505);
+            
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 10000);
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.body.appendChild(renderer.domElement);
+            
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            
+            const renderScene = new THREE.RenderPass(scene, camera);
+            const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.1);
+            bloomPass.threshold = 0;
+            bloomPass.strength = 1.5;
+            bloomPass.radius = 0.5;
+            
+            composer = new THREE.EffectComposer(renderer);
+            composer.addPass(renderScene);
+            composer.addPass(bloomPass);
+            
+            window.addEventListener('resize', onWindowResize);
+            
+            document.getElementById('configSelect').addEventListener('change', (e) => {
+                loadConfig(e.target.value);
+            });
+            
+            window.addEventListener('message', (e) => {
+                if(e.data.type === 'start') isRunning = true;
+                if(e.data.type === 'stop') isRunning = false;
+            });
+            
+            loadConfig('figure8');
+            animate();
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function clearScene() {
+            for(let b of bodies) b.destroy();
+            bodies = [];
+        }
+
+        function rotate3D(v, pitch, yaw, roll) {
+            let y1 = v.y*Math.cos(pitch) - v.z*Math.sin(pitch);
+            let z1 = v.y*Math.sin(pitch) + v.z*Math.cos(pitch);
+            let x2 = v.x*Math.cos(yaw) + z1*Math.sin(yaw);
+            let z2 = -v.x*Math.sin(yaw) + z1*Math.cos(yaw);
+            let x3 = x2*Math.cos(roll) - y1*Math.sin(roll);
+            let y3 = x2*Math.sin(roll) + y1*Math.cos(roll);
+            return new THREE.Vector3(x3, y3, z2);
+        }
+
+        function loadConfig(name) {
+            currentConfig = name;
+            clearScene();
+            if (name === "figure8") loadFigure8();
+            else if (name === "butterfly") loadButterfly();
+            else if (name === "moth") loadMoth();
+            else if (name === "yinyang") loadYinYang();
+            else if (name === "binary") loadBinary();
+            else if (name === "sunEarthMoon") loadSunEarthMoon();
+            else if (name === "trojans") loadTrojans();
+        }
+
+        function spawnBody(pos, vel, m, r, colorHex) {
+            const b = new Body(pos, vel, m, r, colorHex);
+            bodies.push(b);
+            scene.add(b.mesh);
+            scene.add(b.trail);
+        }
+
+        function loadFigure8() {
+            G = 10000.0;
+            dt = 0.01;
+            const scale = 100;
+            const vscale = 10;
+            
+            const pitch = Math.PI / 4;
+            const yaw = Math.PI / 6;
+            
+            const p1 = rotate3D(new THREE.Vector3(0.97000436, -0.24308753, 0), pitch, yaw, 0);
+            const p2 = rotate3D(new THREE.Vector3(-0.97000436, 0.24308753, 0), pitch, yaw, 0);
+            const p3 = rotate3D(new THREE.Vector3(0, 0, 0), pitch, yaw, 0);
+            
+            const v3_base = new THREE.Vector3(-0.93240737, -0.86473146, 0);
+            const v1 = rotate3D(new THREE.Vector3(-v3_base.x/2, -v3_base.y/2, 0), pitch, yaw, 0);
+            const v2 = rotate3D(new THREE.Vector3(-v3_base.x/2, -v3_base.y/2, 0), pitch, yaw, 0);
+            const v3 = rotate3D(v3_base, pitch, yaw, 0);
+            
+            const colors = [0xff0044, 0x00ffff, 0x4444ff];
+            const pos_arr = [p1, p2, p3];
+            const v_arr = [v1, v2, v3];
+            
+            for (let i = 0; i < 3; i++) {
+                spawnBody(
+                    new THREE.Vector3(pos_arr[i].x*scale, pos_arr[i].y*scale, pos_arr[i].z*scale),
+                    new THREE.Vector3(v_arr[i].x*vscale, v_arr[i].y*vscale, v_arr[i].z*vscale),
+                    1.0, 15, colors[i]
+                );
+            }
+            camera.position.set(0, 0, 1200);
+            controls.target.set(0, 0, 0);
+        }
+
+        function loadPeriodic3Body(vx, vy, zoom) {
+            const scale = 200;
+            G = Math.pow(scale, 3);
+            dt = 0.002; 
+            
+            const pitch = Math.PI / 4;
+            const yaw = Math.PI / 6;
+            
+            const p1 = rotate3D(new THREE.Vector3(-1, 0, 0), pitch, yaw, 0);
+            const p2 = rotate3D(new THREE.Vector3(1, 0, 0), pitch, yaw, 0);
+            const p3 = rotate3D(new THREE.Vector3(0, 0, 0), pitch, yaw, 0);
+            
+            const v1 = rotate3D(new THREE.Vector3(vx, vy, 0), pitch, yaw, 0);
+            const v2 = rotate3D(new THREE.Vector3(vx, vy, 0), pitch, yaw, 0);
+            const v3 = rotate3D(new THREE.Vector3(-2*vx, -2*vy, 0), pitch, yaw, 0);
+            
+            const colors = [0xff0044, 0x00ffff, 0x4444ff];
+            const pos_arr = [p1, p2, p3];
+            const v_arr = [v1, v2, v3];
+            
+            for (let i = 0; i < 3; i++) {
+                spawnBody(
+                    new THREE.Vector3(pos_arr[i].x*scale, pos_arr[i].y*scale, pos_arr[i].z*scale),
+                    new THREE.Vector3(v_arr[i].x*scale, v_arr[i].y*scale, v_arr[i].z*scale),
+                    1.0, 15, colors[i]
+                );
+            }
+            camera.position.set(0, 0, zoom || 1200);
+            controls.target.set(0, 0, 0);
+        }
+
+        function loadButterfly() { loadPeriodic3Body(0.30689, 0.12551, 1500); }
+        function loadMoth() { loadPeriodic3Body(0.46444, 0.39606, 1500); }
+        function loadYinYang() { loadPeriodic3Body(0.51394, 0.30474, 1500); }
+
+        function loadBinary() {
+            G = 1.0;
+            dt = 0.05;
+            
+            const vStar = Math.sqrt(G * 100 / (4 * 50));
+            const s0_p = rotate3D(new THREE.Vector3(-50, 0, 0), Math.PI/6, 0, 0);
+            const s0_v = rotate3D(new THREE.Vector3(0, vStar, 0), Math.PI/6, 0, 0);
+            
+            const s1_p = rotate3D(new THREE.Vector3(50, 0, 0), Math.PI/6, 0, 0);
+            const s1_v = rotate3D(new THREE.Vector3(0, -vStar, 0), Math.PI/6, 0, 0);
+            
+            const rPlanet = 200;
+            const aPlanet = G * 100 / Math.pow(rPlanet - 50, 2) + G * 100 / Math.pow(rPlanet + 50, 2);
+            const vPlanet = Math.sqrt(rPlanet * aPlanet);
+            const p_p = rotate3D(new THREE.Vector3(rPlanet, 0, 0), -Math.PI/8, Math.PI/6, 0);
+            const p_v = rotate3D(new THREE.Vector3(0, vPlanet, 0), -Math.PI/8, Math.PI/6, 0);
+            
+            spawnBody(s0_p, s0_v, 100, 30, 0xff8800);
+            spawnBody(s1_p, s1_v, 100, 30, 0xffaa33);
+            spawnBody(p_p, p_v, 0.1, 12, 0x00ffff);
+            
+            camera.position.set(0, 0, 1500);
+            controls.target.set(0, 0, 0);
+        }
+
+        function loadSunEarthMoon() {
+            G = 1.0;
+            dt = 0.02;
+            
+            const rEarth = 250;
+            const vEarth = Math.sqrt(G * 1000 / rEarth);
+            const e_p = rotate3D(new THREE.Vector3(rEarth, 0, 0), Math.PI/6, Math.PI/4, 0);
+            const e_v = rotate3D(new THREE.Vector3(0, vEarth, 0), Math.PI/6, Math.PI/4, 0);
+            
+            const rMoon = 25;
+            const vMoonMag = Math.sqrt(G * 10 / rMoon);
+            const m_p_local = rotate3D(new THREE.Vector3(rMoon, 0, 0), -Math.PI/4, 0, 0);
+            const m_v_local = rotate3D(new THREE.Vector3(0, vMoonMag, 0), -Math.PI/4, 0, 0);
+            
+            spawnBody(new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,0), 1000, 40, 0xffff00);
+            spawnBody(e_p, e_v, 10, 15, 0x4488ff);
+            
+            const m_p = new THREE.Vector3(e_p.x + m_p_local.x, e_p.y + m_p_local.y, e_p.z + m_p_local.z);
+            const m_v = new THREE.Vector3(e_v.x + m_v_local.x, e_v.y + m_v_local.y, e_v.z + m_v_local.z);
+            spawnBody(m_p, m_v, 0.1, 8, 0xcccccc);
+            
+            camera.position.set(0, 0, 1000);
+            controls.target.set(0, 0, 0);
+        }
+
+        function loadTrojans() {
+            G = 1.0;
+            dt = 0.05;
+            
+            const rJup = 250;
+            const vJup = Math.sqrt(G * 1000 / rJup);
+            const tilt = Math.PI / 5;
+            
+            const j_p = rotate3D(new THREE.Vector3(rJup, 0, 0), tilt, 0, 0);
+            const j_v = rotate3D(new THREE.Vector3(0, vJup, 0), tilt, 0, 0);
+            
+            const angle4 = Math.PI / 3;
+            const l4_p = rotate3D(new THREE.Vector3(rJup * Math.cos(angle4), rJup * Math.sin(angle4), 0), tilt, 0, 0);
+            const l4_v = rotate3D(new THREE.Vector3(-vJup * Math.sin(angle4), vJup * Math.cos(angle4), 0), tilt, 0, 0);
+            
+            const angle5 = -Math.PI / 3;
+            const l5_p = rotate3D(new THREE.Vector3(rJup * Math.cos(angle5), rJup * Math.sin(angle5), 0), tilt, 0, 0);
+            const l5_v = rotate3D(new THREE.Vector3(-vJup * Math.sin(angle5), vJup * Math.cos(angle5), 0), tilt, 0, 0);
+            
+            spawnBody(new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,0), 1000, 40, 0xffff00);
+            spawnBody(j_p, j_v, 10, 15, 0x4488ff);
+            spawnBody(l4_p, l4_v, 0.01, 10, 0xff0000);
+            spawnBody(l5_p, l5_v, 0.01, 10, 0xff0000);
+            
+            camera.position.set(0, 0, 1000);
+            controls.target.set(0, 0, 0);
+        }
+
+        function get_derivatives(state) {
+            const n = bodies.length;
+            const dy = new Float64Array(n*6);
+            for (let i = 0; i < n; i++) {
+                const idx = i * 6;
+                dy[idx]   = state[idx+3];
+                dy[idx+1] = state[idx+4];
+                dy[idx+2] = state[idx+5];
+                
+                let ax = 0, ay = 0, az = 0;
+                for (let j = 0; j < n; j++) {
+                    if (i === j) continue;
+                    const jdx = j * 6;
+                    const dx = state[jdx] - state[idx];
+                    const dy_pos = state[jdx+1] - state[idx+1];
+                    const dz = state[jdx+2] - state[idx+2];
+                    
+                    const distSq = dx*dx + dy_pos*dy_pos + dz*dz;
+                    const dist = Math.sqrt(distSq + 0.1); // Softening parameter
+                    
+                    const force = (G * bodies[j].m) / (dist * distSq);
+                    ax += force * dx;
+                    ay += force * dy_pos;
+                    az += force * dz;
                 }
+                dy[idx+3] = ax;
+                dy[idx+4] = ay;
+                dy[idx+5] = az;
+            }
+            return dy;
+        }
 
-                function load_figure8() {
-                    clear_bodies();
-                    G = 10000.0;
-                    dt = 0.01;
-                    var scale = 100;
-                    var vscale = 10;
-                    
-                    var pitch = Math.PI / 4;
-                    var yaw = Math.PI / 6;
-                    
-                    var p1 = rotate3D(vec(0.97000436, -0.24308753, 0), pitch, yaw, 0);
-                    var p2 = rotate3D(vec(-0.97000436, 0.24308753, 0), pitch, yaw, 0);
-                    var p3 = rotate3D(vec(0, 0, 0), pitch, yaw, 0);
-                    
-                    var v3_base = vec(-0.93240737, -0.86473146, 0);
-                    var v1 = rotate3D(vec(-v3_base.x/2, -v3_base.y/2, 0), pitch, yaw, 0);
-                    var v2 = rotate3D(vec(-v3_base.x/2, -v3_base.y/2, 0), pitch, yaw, 0);
-                    var v3 = rotate3D(v3_base, pitch, yaw, 0);
-                    
-                    var colors = [color.red, color.cyan, color.blue];
-                    var pos_arr = [p1, p2, p3];
-                    var v_arr = [v1, v2, v3];
-                    
-                    for (var i = 0; i < 3; i++) {
-                        var b = sphere({pos: vec(pos_arr[i].x*scale, pos_arr[i].y*scale, pos_arr[i].z*scale), radius: 15, color: colors[i], make_trail: true, trail_type: "curve", retain: 350, trail_radius: 2, emissive: true});
-                        b.m = 1.0;
-                        b.v = vec(v_arr[i].x*vscale, v_arr[i].y*vscale, v_arr[i].z*vscale);
-                        b.light = local_light({pos: b.pos, color: b.color});
-                        b.glow = sphere({pos: b.pos, radius: b.radius*2.0, color: b.color, opacity: 0.2, shininess: 0, emissive: true});
-                        bodies.push(b);
-                    }
-                    
-                    scene.camera.pos = vec(0, 0, 1200);
+        function rk4_step() {
+            const n = bodies.length;
+            const state = new Float64Array(n*6);
+            for (let i = 0; i < n; i++) {
+                const idx = i * 6;
+                state[idx]   = bodies[i].pos.x;
+                state[idx+1] = bodies[i].pos.y;
+                state[idx+2] = bodies[i].pos.z;
+                state[idx+3] = bodies[i].v.x;
+                state[idx+4] = bodies[i].v.y;
+                state[idx+5] = bodies[i].v.z;
+            }
+                
+            const k1 = get_derivatives(state);
+            
+            const temp = new Float64Array(n*6);
+            for (let i = 0; i < n*6; i++) temp[i] = state[i] + k1[i]*dt*0.5;
+            const k2 = get_derivatives(temp);
+            
+            for (let i = 0; i < n*6; i++) temp[i] = state[i] + k2[i]*dt*0.5;
+            const k3 = get_derivatives(temp);
+            
+            for (let i = 0; i < n*6; i++) temp[i] = state[i] + k3[i]*dt;
+            const k4 = get_derivatives(temp);
+            
+            for (let i = 0; i < n; i++) {
+                const idx = i * 6;
+                bodies[i].pos.x += (k1[idx]   + 2.0*k2[idx]   + 2.0*k3[idx]   + k4[idx])   * dt / 6.0;
+                bodies[i].pos.y += (k1[idx+1] + 2.0*k2[idx+1] + 2.0*k3[idx+1] + k4[idx+1]) * dt / 6.0;
+                bodies[i].pos.z += (k1[idx+2] + 2.0*k2[idx+2] + 2.0*k3[idx+2] + k4[idx+2]) * dt / 6.0;
+                bodies[i].v.x   += (k1[idx+3] + 2.0*k2[idx+3] + 2.0*k3[idx+3] + k4[idx+3]) * dt / 6.0;
+                bodies[i].v.y   += (k1[idx+4] + 2.0*k2[idx+4] + 2.0*k3[idx+4] + k4[idx+4]) * dt / 6.0;
+                bodies[i].v.z   += (k1[idx+5] + 2.0*k2[idx+5] + 2.0*k3[idx+5] + k4[idx+5]) * dt / 6.0;
+
+                bodies[i].mesh.position.copy(bodies[i].pos);
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            
+            if (isRunning) {
+                for(let i=0; i<10; i++) {
+                    rk4_step();
                 }
-
-                function load_periodic_3body(vx, vy, zoom) {
-                    clear_bodies();
-                    var scale = 200;
-                    G = Math.pow(scale, 3);
-                    dt = 0.002; 
-                    
-                    var pitch = Math.PI / 4;
-                    var yaw = Math.PI / 6;
-                    
-                    var p1 = rotate3D(vec(-1, 0, 0), pitch, yaw, 0);
-                    var p2 = rotate3D(vec(1, 0, 0), pitch, yaw, 0);
-                    var p3 = rotate3D(vec(0, 0, 0), pitch, yaw, 0);
-                    
-                    var v1 = rotate3D(vec(vx, vy, 0), pitch, yaw, 0);
-                    var v2 = rotate3D(vec(vx, vy, 0), pitch, yaw, 0);
-                    var v3 = rotate3D(vec(-2*vx, -2*vy, 0), pitch, yaw, 0);
-                    
-                    var colors = [color.red, color.cyan, color.blue];
-                    var pos_arr = [p1, p2, p3];
-                    var v_arr = [v1, v2, v3];
-                    
-                    for (var i = 0; i < 3; i++) {
-                        var b = sphere({pos: vec(pos_arr[i].x*scale, pos_arr[i].y*scale, pos_arr[i].z*scale), radius: 15, color: colors[i], make_trail: true, trail_type: "curve", retain: 800, trail_radius: 2, emissive: true});
-                        b.m = 1.0;
-                        b.v = vec(v_arr[i].x*scale, v_arr[i].y*scale, v_arr[i].z*scale);
-                        b.light = local_light({pos: b.pos, color: b.color});
-                        b.glow = sphere({pos: b.pos, radius: b.radius*2.0, color: b.color, opacity: 0.2, shininess: 0, emissive: true});
-                        bodies.push(b);
-                    }
-                    
-                    scene.camera.pos = vec(0, 0, zoom || 1200);
-                }
-
-                function load_butterfly() { load_periodic_3body(0.30689, 0.12551, 1500); }
-                function load_moth() { load_periodic_3body(0.46444, 0.39606, 1500); }
-                function load_yinyang() { load_periodic_3body(0.51394, 0.30474, 1500); }
-
-                function load_binary() {
-                    clear_bodies();
-                    G = 1.0;
-                    dt = 0.05;
-                    
-                    var vStar = Math.sqrt(G * 100 / (4 * 50));
-                    var s0_p = rotate3D(vec(-50, 0, 0), Math.PI/6, 0, 0);
-                    var s0_v = rotate3D(vec(0, vStar, 0), Math.PI/6, 0, 0);
-                    
-                    var s1_p = rotate3D(vec(50, 0, 0), Math.PI/6, 0, 0);
-                    var s1_v = rotate3D(vec(0, -vStar, 0), Math.PI/6, 0, 0);
-                    
-                    var rPlanet = 200;
-                    var aPlanet = G * 100 / Math.pow(rPlanet - 50, 2) + G * 100 / Math.pow(rPlanet + 50, 2);
-                    var vPlanet = Math.sqrt(rPlanet * aPlanet);
-                    var p_p = rotate3D(vec(rPlanet, 0, 0), -Math.PI/8, Math.PI/6, 0);
-                    var p_v = rotate3D(vec(0, vPlanet, 0), -Math.PI/8, Math.PI/6, 0);
-                    
-                    var stars = [
-                        {p: s0_p, v: s0_v, m: 100, r: 30, c: color.orange},
-                        {p: s1_p, v: s1_v, m: 100, r: 30, c: vec(1, 0.6, 0.2)},
-                        {p: p_p, v: p_v, m: 0.1, r: 12, c: color.cyan}
-                    ];
-                    
-                    for (var i=0; i<stars.length; i++) {
-                        var s = stars[i];
-                        var b = sphere({pos: s.p, radius: s.r, color: s.c, make_trail: true, trail_type: "curve", retain: 350, trail_radius: 1.5, emissive: true});
-                        b.m = s.m;
-                        b.v = s.v;
-                        if (s.m > 50) {
-                            b.light = local_light({pos: b.pos, color: b.color});
-                            b.glow = sphere({pos: b.pos, radius: b.radius*1.5, color: b.color, opacity: 0.3, shininess: 0, emissive: true});
-                        }
-                        bodies.push(b);
-                    }
-                    scene.camera.pos = vec(0, 0, 1500);
-                }
-
-                function load_sunEarthMoon() {
-                    clear_bodies();
-                    G = 1.0;
-                    dt = 0.02;
-                    
-                    var rEarth = 250;
-                    var vEarth = Math.sqrt(G * 1000 / rEarth);
-                    var e_p = rotate3D(vec(rEarth, 0, 0), Math.PI/6, Math.PI/4, 0);
-                    var e_v = rotate3D(vec(0, vEarth, 0), Math.PI/6, Math.PI/4, 0);
-                    
-                    var rMoon = 25;
-                    var vMoonMag = Math.sqrt(G * 10 / rMoon);
-                    var m_p_local = rotate3D(vec(rMoon, 0, 0), -Math.PI/4, 0, 0);
-                    var m_v_local = rotate3D(vec(0, vMoonMag, 0), -Math.PI/4, 0, 0);
-                    
-                    var objs = [
-                        {p: vec(0,0,0), v: vec(0,0,0), m: 1000, r: 40, c: color.yellow},
-                        {p: e_p, v: e_v, m: 10, r: 15, c: vec(0.4, 0.6, 1)},
-                        {p: vec(e_p.x + m_p_local.x, e_p.y + m_p_local.y, e_p.z + m_p_local.z), v: vec(e_v.x + m_v_local.x, e_v.y + m_v_local.y, e_v.z + m_v_local.z), m: 0.1, r: 8, c: color.gray(0.8)}
-                    ];
-                    
-                    for (var i=0; i<objs.length; i++) {
-                        var s = objs[i];
-                        var b = sphere({pos: s.p, radius: s.r, color: s.c, make_trail: true, trail_type: "curve", retain: 400, trail_radius: 1.5, emissive: true});
-                        b.m = s.m;
-                        b.v = s.v;
-                        if (s.m > 50) {
-                            b.light = local_light({pos: b.pos, color: b.color});
-                            b.glow = sphere({pos: b.pos, radius: b.radius*1.5, color: b.color, opacity: 0.3, shininess: 0, emissive: true});
-                        }
-                        bodies.push(b);
-                    }
-                    scene.camera.pos = vec(0, 0, 2000);
-                }
-
-                function load_trojans() {
-                    clear_bodies();
-                    G = 1.0;
-                    dt = 0.05;
-                    
-                    var rJup = 250;
-                    var vJup = Math.sqrt(G * 1000 / rJup);
-                    var tilt = Math.PI / 5;
-                    
-                    var j_p = rotate3D(vec(rJup, 0, 0), tilt, 0, 0);
-                    var j_v = rotate3D(vec(0, vJup, 0), tilt, 0, 0);
-                    
-                    var angle4 = Math.PI / 3;
-                    var l4_p = rotate3D(vec(rJup * Math.cos(angle4), rJup * Math.sin(angle4), 0), tilt, 0, 0);
-                    var l4_v = rotate3D(vec(-vJup * Math.sin(angle4), vJup * Math.cos(angle4), 0), tilt, 0, 0);
-                    
-                    var angle5 = -Math.PI / 3;
-                    var l5_p = rotate3D(vec(rJup * Math.cos(angle5), rJup * Math.sin(angle5), 0), tilt, 0, 0);
-                    var l5_v = rotate3D(vec(-vJup * Math.sin(angle5), vJup * Math.cos(angle5), 0), tilt, 0, 0);
-                    
-                    var objs = [
-                        {p: vec(0,0,0), v: vec(0,0,0), m: 1000, r: 40, c: color.yellow},
-                        {p: j_p, v: j_v, m: 10, r: 15, c: vec(0.4, 0.6, 1)},
-                        {p: l4_p, v: l4_v, m: 0.01, r: 10, c: color.red},
-                        {p: l5_p, v: l5_v, m: 0.01, r: 10, c: color.red}
-                    ];
-                    
-                    for (var i=0; i<objs.length; i++) {
-                        var s = objs[i];
-                        var b = sphere({pos: s.p, radius: s.r, color: s.c, make_trail: true, trail_type: "curve", retain: 350, trail_radius: 1.5, emissive: true});
-                        b.m = s.m;
-                        b.v = s.v;
-                        if (s.m > 50) {
-                            b.light = local_light({pos: b.pos, color: b.color});
-                            b.glow = sphere({pos: b.pos, radius: b.radius*1.5, color: b.color, opacity: 0.3, shininess: 0, emissive: true});
-                        }
-                        bodies.push(b);
-                    }
-                    scene.camera.pos = vec(0, 0, 2000);
-                }
-
-                function get_derivatives(state) {
-                    var n = bodies.length;
-                    var dy = new Array(n*6).fill(0);
-                    for (var i = 0; i < n; i++) {
-                        var idx = i * 6;
-                        dy[idx]   = state[idx+3];
-                        dy[idx+1] = state[idx+4];
-                        dy[idx+2] = state[idx+5];
-                        
-                        var ax = 0;
-                        var ay = 0;
-                        var az = 0;
-                        for (var j = 0; j < n; j++) {
-                            if (i === j) continue;
-                            var jdx = j * 6;
-                            var dx = state[jdx] - state[idx];
-                            var dy_pos = state[jdx+1] - state[idx+1];
-                            var dz = state[jdx+2] - state[idx+2];
-                            
-                            var distSq = dx*dx + dy_pos*dy_pos + dz*dz;
-                            var dist = Math.sqrt(distSq + 0.1);
-                            
-                            var force = (G * bodies[j].m) / (dist * distSq);
-                            ax += force * dx;
-                            ay += force * dy_pos;
-                            az += force * dz;
-                        }
-                        dy[idx+3] = ax;
-                        dy[idx+4] = ay;
-                        dy[idx+5] = az;
-                    }
-                    return dy;
-                }
-
-                function rk4_step() {
-                    var n = bodies.length;
-                    var state = new Array(n*6).fill(0);
-                    for (var i = 0; i < n; i++) {
-                        var idx = i * 6;
-                        state[idx]   = bodies[i].pos.x;
-                        state[idx+1] = bodies[i].pos.y;
-                        state[idx+2] = bodies[i].pos.z;
-                        state[idx+3] = bodies[i].v.x;
-                        state[idx+4] = bodies[i].v.y;
-                        state[idx+5] = bodies[i].v.z;
-                    }
-                        
-                    var k1 = get_derivatives(state);
-                    
-                    var temp = new Array(n*6).fill(0);
-                    for (var i = 0; i < n*6; i++) temp[i] = state[i] + k1[i]*dt*0.5;
-                    var k2 = get_derivatives(temp);
-                    
-                    for (var i = 0; i < n*6; i++) temp[i] = state[i] + k2[i]*dt*0.5;
-                    var k3 = get_derivatives(temp);
-                    
-                    for (var i = 0; i < n*6; i++) temp[i] = state[i] + k3[i]*dt;
-                    var k4 = get_derivatives(temp);
-                    
-                    for (var i = 0; i < n; i++) {
-                        var idx = i * 6;
-                        bodies[i].pos.x += (k1[idx]   + 2.0*k2[idx]   + 2.0*k3[idx]   + k4[idx])   * dt / 6.0;
-                        bodies[i].pos.y += (k1[idx+1] + 2.0*k2[idx+1] + 2.0*k3[idx+1] + k4[idx+1]) * dt / 6.0;
-                        bodies[i].pos.z += (k1[idx+2] + 2.0*k2[idx+2] + 2.0*k3[idx+2] + k4[idx+2]) * dt / 6.0;
-                        bodies[i].v.x   += (k1[idx+3] + 2.0*k2[idx+3] + 2.0*k3[idx+3] + k4[idx+3]) * dt / 6.0;
-                        bodies[i].v.y   += (k1[idx+4] + 2.0*k2[idx+4] + 2.0*k3[idx+4] + k4[idx+4]) * dt / 6.0;
-                        bodies[i].v.z   += (k1[idx+5] + 2.0*k2[idx+5] + 2.0*k3[idx+5] + k4[idx+5]) * dt / 6.0;
-
-                        if (bodies[i].glow) bodies[i].glow.pos = bodies[i].pos;
-                        if (bodies[i].light) bodies[i].light.pos = bodies[i].pos;
-                    }
-                }
-
-                var current_config_internal = "";
-
-                while (true) {
-                    await rate(60);
-                    
-                    if (window.current_config !== current_config_internal) {
-                        current_config_internal = window.current_config;
-                        if (current_config_internal === "figure8") load_figure8();
-                        else if (current_config_internal === "butterfly") load_butterfly();
-                        else if (current_config_internal === "moth") load_moth();
-                        else if (current_config_internal === "yinyang") load_yinyang();
-                        else if (current_config_internal === "binary") load_binary();
-                        else if (current_config_internal === "sunEarthMoon") load_sunEarthMoon();
-                        else if (current_config_internal === "trojans") load_trojans();
-                    }
-                        
-                    if (window.sim_running) {
-                        for (var i=0; i<10; i++) {
-                            rk4_step();
-                        }
-                    }
+                
+                trailUpdateTimer++;
+                if (trailUpdateTimer >= 2) {
+                    for(let b of bodies) b.updateTrail();
+                    trailUpdateTimer = 0;
                 }
             }
-            $(function () { window.__context = { glowscript_container: $("#glowscript").removeAttr("id") }; __main__() })
-        })();
+            
+            composer.render();
+        }
+
+        // Boot
+        init();
     </script>
 </body>
 </html>

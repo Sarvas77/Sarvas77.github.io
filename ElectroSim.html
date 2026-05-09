@@ -3,288 +3,490 @@
 <head>
     <meta charset="UTF-8">
     <title>Electromagnetism Simulations</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         body { margin: 0; padding: 0; overflow: hidden; background: #050505; }
         canvas { display: block; }
         #controls {
             position: absolute;
-            top: 15px;
-            left: 15px;
+            top: 20px;
+            left: 20px;
             color: #ededed;
-            font-family: 'JetBrains Mono', monospace;
+            font-family: 'JetBrains Mono', monospace, sans-serif;
             background: rgba(13, 13, 13, 0.85);
-            padding: 15px;
-            border-radius: 8px;
+            padding: 20px;
+            border-radius: 12px;
             border: 1px solid #1f1f1f;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
+            z-index: 10;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            pointer-events: auto;
+        }
+        #ui-container {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
             z-index: 10;
         }
-        select, button {
+        select {
             background: rgba(255, 255, 255, 0.05);
             color: #64ffda;
-            border: 1px solid #64ffda;
-            padding: 5px 10px;
-            font-family: 'JetBrains Mono', monospace;
-            border-radius: 4px;
+            border: 1px solid rgba(100, 255, 218, 0.3);
+            padding: 8px 12px;
+            font-family: inherit;
+            font-size: 14px;
+            border-radius: 6px;
             cursor: pointer;
             outline: none;
+            transition: all 0.2s ease;
+            appearance: none;
         }
-        select:hover, button:hover {
+        select:hover {
             background: rgba(100, 255, 218, 0.1);
+            border-color: #64ffda;
+        }
+        select:focus {
+            box-shadow: 0 0 10px rgba(100, 255, 218, 0.2);
+            border-color: #64ffda;
+        }
+        label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #888;
         }
         .help-text {
-            color: #888;
-            font-size: 0.8rem;
+            color: #666;
+            font-size: 11px;
             margin-top: 5px;
+            line-height: 1.4;
+        }
+        select option {
+            background: #0d0d0d;
+            color: #64ffda;
         }
     </style>
-    <!-- GlowScript requirements -->
-    <link type="text/css" href="https://www.glowscript.org/css/redmond/2.1/jquery-ui.custom.css" rel="stylesheet" />
-    <link type="text/css" href="https://www.glowscript.org/css/ide.css" rel="stylesheet" />
-    <script type="text/javascript" src="https://www.glowscript.org/lib/jquery/2.1/jquery.min.js"></script>
-    <script type="text/javascript" src="https://www.glowscript.org/lib/jquery/2.1/jquery-ui.custom.min.js"></script>
-    <script type="text/javascript" src="https://www.glowscript.org/package/glow.3.2.min.js"></script>
-    <script type="text/javascript" src="https://www.glowscript.org/package/RSrun.3.2.min.js"></script>
 </head>
 <body>
-    <div id="controls">
-        <label for="configSelect">Simulation Scenario:</label>
-        <select id="configSelect" onchange="window.changeConfig(this.value)">
-            <option value="bottle">Magnetic Bottle (Trapped Plasma)</option>
-            <option value="cyclotron">Cyclotron Accelerator</option>
-            <option value="swarm">Lorentz Force Swarm</option>
-        </select>
-        <div class="help-text">Right-click + drag to spin.<br>Scroll to zoom.</div>
+    <div id="ui-container">
+        <div id="controls">
+            <label for="configSelect">Simulation Scenario</label>
+            <select id="configSelect">
+                <option value="bottle">Magnetic Bottle</option>
+                <option value="magnetosphere">Earth's Magnetosphere</option>
+                <option value="swarm">Lorentz Swarm</option>
+            </select>
+            <div class="help-text">Left Click + Drag to rotate<br>Scroll to zoom</div>
+        </div>
     </div>
 
-    <div id="glowscript" class="glowscript"></div>
+    <!-- Three.js and Post-Processing Dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 
-    <script type="text/javascript">
-        window.sim_running = false;
-        window.current_config = "bottle";
-        window.changeConfig = function(val) {
-            window.current_config = val;
-        };
+    <script>
+        const MAX_TRAIL_LENGTH = 150;
 
-        window.addEventListener('message', function(e) {
-            if (e.data.type === 'start') {
-                window.sim_running = true;
-            } else if (e.data.type === 'stop') {
-                window.sim_running = false;
-            }
-        });
-        
-        ;(function () {
-            async function __main__() {
-                "use strict";
-                var scene = canvas({title: "", width: window.innerWidth, height: window.innerHeight, background: color.gray(0.05)});
-                scene.camera.pos = vec(0, 0, 50);
-                scene.ambient = color.gray(0.2);
-                scene.autoscale = false;
-                scene.center = vec(0, 0, 0);
-
-                var particles = [];
-                var dt = 0.01;
-                var time = 0;
+        class Particle {
+            constructor(pos, vel, color, charge, mass) {
+                this.q = charge;
+                this.m = mass;
+                this.pos = pos.clone();
+                this.v = vel.clone();
+                this.age = 0;
                 
-                // Electromagnetic field functions
-                var get_E = function(pos, t) { return vec(0,0,0); };
-                var get_B = function(pos, t) { return vec(0,0,0); };
-
-                // Visual field lines/coils
-                var props = [];
-
-                function clear_scene() {
-                    for (var i = 0; i < particles.length; i++) {
-                        particles[i].visible = false;
-                        if (particles[i].glow) particles[i].glow.visible = false;
-                        particles[i].clear_trail();
-                    }
-                    particles = [];
-                    for (var i = 0; i < props.length; i++) {
-                        props[i].visible = false;
-                    }
-                    props = [];
-                    time = 0;
+                // Visual Mesh
+                const geo = new THREE.SphereGeometry(0.5, 16, 16);
+                const mat = new THREE.MeshBasicMaterial({ color: color });
+                this.mesh = new THREE.Mesh(geo, mat);
+                this.mesh.position.copy(this.pos);
+                
+                // Trail
+                const trailGeo = new THREE.BufferGeometry();
+                this.trailPositions = new Float32Array(MAX_TRAIL_LENGTH * 3);
+                
+                // Pre-fill trail with starting pos
+                for(let i=0; i<MAX_TRAIL_LENGTH; i++) {
+                    this.trailPositions[i*3] = this.pos.x;
+                    this.trailPositions[i*3+1] = this.pos.y;
+                    this.trailPositions[i*3+2] = this.pos.z;
                 }
-
-                function load_bottle() {
-                    clear_scene();
-                    scene.camera.pos = vec(0, 20, 40);
-                    scene.center = vec(0, 0, 0);
-                    dt = 0.02;
-
-                    // Two magnetic coils at z = -20 and z = 20
-                    var R = 15;
-                    var coil1 = ring({pos: vec(0,0,-20), axis: vec(0,0,1), radius: R, thickness: 1, color: color.orange, emissive: true});
-                    var coil2 = ring({pos: vec(0,0,20), axis: vec(0,0,1), radius: R, thickness: 1, color: color.orange, emissive: true});
-                    props.push(coil1);
-                    props.push(coil2);
-
-                    // Magnetic field from two loops
-                    var B0 = 1000;
-                    get_B = function(pos, t) {
-                        // Approximation of magnetic bottle field near axis
-                        // B_z(z) = B0 * (1 + (z/10)^2)
-                        // B_r(r, z) = - (r/2) * d B_z / dz
-                        var z = pos.z;
-                        var r = Math.sqrt(pos.x*pos.x + pos.y*pos.y);
-                        
-                        var Bz = B0 * (1 + Math.pow(z/15, 2));
-                        var dPz_dz = B0 * 2 * z / 225; // derivative of Bz w.r.t z
-                        var Br = - (r / 2) * dPz_dz;
-                        
-                        var angle = Math.atan2(pos.y, pos.x);
-                        var Bx = Br * Math.cos(angle);
-                        var By = Br * Math.sin(angle);
-                        
-                        return vec(Bx, By, Bz);
-                    };
-                    get_E = function(pos, t) { return vec(0,0,0); };
-
-                    // Add particles
-                    var colors = [color.cyan, color.magenta, color.green, color.yellow];
-                    for (var i = 0; i < 4; i++) {
-                        var angle = i * Math.PI / 2;
-                        var p = sphere({pos: vec(5*Math.cos(angle), 5*Math.sin(angle), 0), radius: 0.5, color: colors[i], make_trail: true, trail_type: "curve", retain: 400, trail_radius: 0.2, emissive: true});
-                        p.q = 1.0;
-                        p.m = 1.0;
-                        // Give them velocity in xy plane (cyclotron) and z (bouncing)
-                        p.v = vec(-10*Math.sin(angle), 10*Math.cos(angle), 15); 
-                        p.glow = sphere({pos: p.pos, radius: 1.5, color: p.color, opacity: 0.3, shininess: 0, emissive: true});
-                        particles.push(p);
-                    }
+                trailGeo.setAttribute('position', new THREE.BufferAttribute(this.trailPositions, 3));
+                
+                const trailMat = new THREE.LineBasicMaterial({ 
+                    color: color, 
+                    transparent: true, 
+                    opacity: 0.8,
+                    blending: THREE.AdditiveBlending 
+                });
+                this.trail = new THREE.Line(trailGeo, trailMat);
+            }
+            
+            destroy() {
+                if(this.mesh && this.mesh.parent) this.mesh.parent.remove(this.mesh);
+                if(this.trail && this.trail.parent) this.trail.parent.remove(this.trail);
+                if(this.mesh.geometry) this.mesh.geometry.dispose();
+                if(this.mesh.material) this.mesh.material.dispose();
+                if(this.trail.geometry) this.trail.geometry.dispose();
+                if(this.trail.material) this.trail.material.dispose();
+            }
+            
+            updateTrail() {
+                // Shift trail positions down
+                for(let i = MAX_TRAIL_LENGTH - 1; i > 0; i--) {
+                    this.trailPositions[i*3] = this.trailPositions[(i-1)*3];
+                    this.trailPositions[i*3+1] = this.trailPositions[(i-1)*3+1];
+                    this.trailPositions[i*3+2] = this.trailPositions[(i-1)*3+2];
                 }
+                // New head
+                this.trailPositions[0] = this.pos.x;
+                this.trailPositions[1] = this.pos.y;
+                this.trailPositions[2] = this.pos.z;
+                
+                this.trail.geometry.attributes.position.needsUpdate = true;
+            }
+        }
 
-                function load_cyclotron() {
-                    clear_scene();
-                    scene.camera.pos = vec(0, 0, 50);
-                    scene.center = vec(0, 0, 0);
-                    dt = 0.01;
+        let scene, camera, renderer, composer, controls;
+        let particles = [];
+        let props = [];
+        let time = 0;
+        let dt = 0.01;
+        let get_E = (pos, t) => new THREE.Vector3();
+        let get_B = (pos, t) => new THREE.Vector3();
+        let isRunning = false;
+        let trailUpdateTimer = 0;
+        let currentScenario = 'bottle';
 
-                    // D-plates visualization
-                    var D1 = cylinder({pos: vec(-1,0,0), axis: vec(-20,0,0), radius: 20, color: color.gray(0.5), opacity: 0.2});
-                    var D2 = cylinder({pos: vec(1,0,0), axis: vec(20,0,0), radius: 20, color: color.gray(0.5), opacity: 0.2});
-                    props.push(D1, D2);
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x050505);
+            scene.fog = new THREE.FogExp2(0x050505, 0.005);
+            
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 1000);
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.body.appendChild(renderer.domElement);
+            
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            
+            // Post Processing (Bloom)
+            const renderScene = new THREE.RenderPass(scene, camera);
+            const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.1);
+            bloomPass.threshold = 0;
+            bloomPass.strength = 1.8; // Strong neon glow
+            bloomPass.radius = 0.5;
+            
+            composer = new THREE.EffectComposer(renderer);
+            composer.addPass(renderScene);
+            composer.addPass(bloomPass);
+            
+            window.addEventListener('resize', onWindowResize);
+            
+            document.getElementById('configSelect').addEventListener('change', (e) => {
+                loadConfig(e.target.value);
+            });
+            
+            window.addEventListener('message', (e) => {
+                if(e.data.type === 'start') isRunning = true;
+                if(e.data.type === 'stop') isRunning = false;
+            });
+            
+            loadConfig('bottle');
+            animate();
+        }
 
-                    var omega = 10.0; // Cyclotron frequency qB/m = 1*10/1 = 10
-                    
-                    get_B = function(pos, t) {
-                        return vec(0, 0, 10);
-                    };
-                    
-                    get_E = function(pos, t) {
-                        // Alternating E field only in the gap between x=-1 and x=1
-                        if (Math.abs(pos.x) < 1.0) {
-                            var Ex = 50 * Math.cos(omega * t);
-                            return vec(Ex, 0, 0);
-                        }
-                        return vec(0, 0, 0);
-                    };
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        }
 
-                    var p = sphere({pos: vec(0, 0.1, 0), radius: 0.8, color: color.red, make_trail: true, trail_type: "curve", retain: 1000, trail_radius: 0.3, emissive: true});
-                    p.q = 1.0;
-                    p.m = 1.0;
-                    p.v = vec(0, 2, 0);
-                    p.glow = sphere({pos: p.pos, radius: 2.0, color: p.color, opacity: 0.3, shininess: 0, emissive: true});
-                    particles.push(p);
+        function clearScene() {
+            for(let p of particles) {
+                scene.remove(p.mesh);
+                scene.remove(p.trail);
+            }
+            particles = [];
+            for(let p of props) {
+                scene.remove(p);
+            }
+            props = [];
+            time = 0;
+        }
+
+        function loadConfig(name) {
+            currentScenario = name;
+            if(name === 'bottle') loadBottle();
+            else if(name === 'magnetosphere') loadMagnetosphere();
+            else if(name === 'swarm') loadSwarm();
+        }
+
+        function loadBottle() {
+            clearScene();
+            camera.position.set(0, 25, 50);
+            controls.target.set(0, 0, 0);
+            dt = 0.005; // Lower timestep for stability
+            
+            // Magnetic Coils
+            const coilGeo = new THREE.TorusGeometry(15, 0.6, 16, 100);
+            const coilMat = new THREE.MeshBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.8 });
+            
+            const coil1 = new THREE.Mesh(coilGeo, coilMat);
+            coil1.position.z = -20;
+            scene.add(coil1);
+            props.push(coil1);
+            
+            const coil2 = new THREE.Mesh(coilGeo, coilMat);
+            coil2.position.z = 20;
+            scene.add(coil2);
+            props.push(coil2);
+
+            // Connective ghostly field lines
+            const fieldMat = new THREE.MeshBasicMaterial({ color: 0x442200, transparent: true, opacity: 0.1, wireframe: true });
+            const cylinderGeo = new THREE.CylinderGeometry(15, 15, 40, 32, 1, true);
+            const field = new THREE.Mesh(cylinderGeo, fieldMat);
+            field.rotation.x = Math.PI / 2;
+            scene.add(field);
+            props.push(field);
+            
+            const B0 = 20; // Lowered magnetic field strength
+            get_B = (pos, t) => {
+                const z = pos.z;
+                const r = Math.sqrt(pos.x*pos.x + pos.y*pos.y);
+                const Bz = B0 * (1 + Math.pow(z/15, 2));
+                const dPz_dz = B0 * 2 * z / 225;
+                const Br = - (r / 2) * dPz_dz;
+                
+                const angle = Math.atan2(pos.y, pos.x);
+                const Bx = Br * Math.cos(angle);
+                const By = Br * Math.sin(angle);
+                return new THREE.Vector3(Bx, By, Bz);
+            };
+            get_E = () => new THREE.Vector3(0,0,0);
+            
+            const colors = [0x00ffff, 0xff00ff, 0x00ff00, 0xffff00];
+            for(let i=0; i<4; i++) {
+                const angle = i * Math.PI / 2;
+                const pos = new THREE.Vector3(5*Math.cos(angle), 5*Math.sin(angle), 0);
+                // High perpendicular velocity (10) and low parallel velocity (4) so they get trapped by the mirror effect
+                const vel = new THREE.Vector3(-10*Math.sin(angle), 10*Math.cos(angle), 4);
+                const p = new Particle(pos, vel, colors[i], 1.0, 1.0);
+                particles.push(p);
+                scene.add(p.mesh);
+                scene.add(p.trail);
+            }
+        }
+
+        function loadMagnetosphere() {
+            clearScene();
+            camera.position.set(0, 0, 90);
+            controls.target.set(0, 0, 0);
+            dt = 0.005;
+            
+            // Earth Sphere
+            const earthGeo = new THREE.SphereGeometry(10, 32, 32);
+            const earthMat = new THREE.MeshBasicMaterial({ color: 0x0088ff, transparent: true, opacity: 0.9 });
+            const earth = new THREE.Mesh(earthGeo, earthMat);
+            scene.add(earth);
+            props.push(earth);
+            
+            // Inner Core (glow)
+            const coreGeo = new THREE.SphereGeometry(8, 32, 32);
+            const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const core = new THREE.Mesh(coreGeo, coreMat);
+            scene.add(core);
+            props.push(core);
+            
+            // Magnetic Dipole Moment vector (m) pointing along Y axis
+            const m = new THREE.Vector3(0, 200000, 0); 
+            
+            get_B = (pos, t) => {
+                const r = pos.length();
+                if (r < 10) return new THREE.Vector3(0,0,0); // Inside Earth
+                
+                const r5 = Math.pow(r, 5);
+                const r3 = Math.pow(r, 3);
+                const m_dot_r = m.dot(pos);
+                
+                const term1 = pos.clone().multiplyScalar(3 * m_dot_r / r5);
+                const term2 = m.clone().divideScalar(r3);
+                
+                return term1.sub(term2);
+            };
+            
+            get_E = () => new THREE.Vector3(0,0,0);
+        }
+
+        function loadSwarm() {
+            clearScene();
+            camera.position.set(0, -40, 50);
+            controls.target.set(0, 0, 0);
+            dt = 0.01;
+            
+            // Central wire
+            const wireGeo = new THREE.CylinderGeometry(0.5, 0.5, 80, 16);
+            const wireMat = new THREE.MeshBasicMaterial({ color: 0x0044ff });
+            const wire = new THREE.Mesh(wireGeo, wireMat);
+            wire.rotation.x = Math.PI/2;
+            scene.add(wire);
+            props.push(wire);
+            
+            get_B = (pos, t) => {
+                const r2 = pos.x*pos.x + pos.y*pos.y;
+                if (r2 < 1) return new THREE.Vector3(0,0,0);
+                const Bmag = 100 / r2;
+                return new THREE.Vector3(-Bmag * pos.y, Bmag * pos.x, 0);
+            };
+            get_E = (pos, t) => {
+                const r2 = pos.x*pos.x + pos.y*pos.y;
+                if (r2 < 1) return new THREE.Vector3(0,0,0);
+                const Emag = -50 / r2;
+                return new THREE.Vector3(Emag * pos.x, Emag * pos.y, 0);
+            };
+            
+            for(let i=0; i<30; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const r = 10 + Math.random() * 10;
+                const z = -30 + Math.random() * 60;
+                const pos = new THREE.Vector3(r*Math.cos(angle), r*Math.sin(angle), z);
+                const vel = new THREE.Vector3(0, 0, 5 + Math.random()*10);
+                
+                const color = new THREE.Color();
+                color.setHSL(Math.random(), 1.0, 0.5);
+                
+                const p = new Particle(pos, vel, color.getHex(), 1.0, 1.0);
+                particles.push(p);
+                scene.add(p.mesh);
+                scene.add(p.trail);
+            }
+        }
+
+        function emitSolarWind() {
+            if (currentScenario !== 'magnetosphere') return;
+            
+            if (Math.random() < 0.15) { // Spawn rate
+                const y = (Math.random() - 0.5) * 60;
+                const z = (Math.random() - 0.5) * 60;
+                const pos = new THREE.Vector3(-80, y, z); // Start far left
+                
+                const vel = new THREE.Vector3(25 + Math.random()*10, 0, 0); // Moving right
+                
+                const color = new THREE.Color();
+                color.setHSL(0.05 + Math.random()*0.1, 1.0, 0.6); // Fiery solar colors
+                
+                // q/m ratio: positive or negative
+                const q = Math.random() > 0.5 ? 1.0 : -1.0;
+                
+                const p = new Particle(pos, vel, color.getHex(), q, 1.0);
+                particles.push(p);
+                scene.add(p.mesh);
+                scene.add(p.trail);
+            }
+        }
+
+        function stepPhysics() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.age += dt;
+                
+                // Cull dead or distant particles
+                if (p.pos.length() > 150 || p.age > 40) {
+                    p.destroy();
+                    particles.splice(i, 1);
+                    continue;
                 }
+                
+                const E = get_E(p.pos, time);
+                const B = get_B(p.pos, time);
+                
+                const q_m = p.q / p.m;
+                
+                // Boris Algorithm (Exact Energy Conservation for Magnetic Fields)
+                const hdt = dt * 0.5;
+                const qm_hdt = q_m * hdt;
+                
+                // v_minus = v + (q/m)*E*dt/2
+                const vmx = p.v.x + E.x * qm_hdt;
+                const vmy = p.v.y + E.y * qm_hdt;
+                const vmz = p.v.z + E.z * qm_hdt;
+                
+                // t = (q/m)*B*dt/2
+                const tx = B.x * qm_hdt;
+                const ty = B.y * qm_hdt;
+                const tz = B.z * qm_hdt;
+                
+                const t2 = tx*tx + ty*ty + tz*tz;
+                
+                // s = 2t / (1 + |t|^2)
+                const s_factor = 2.0 / (1.0 + t2);
+                const sx = tx * s_factor;
+                const sy = ty * s_factor;
+                const sz = tz * s_factor;
+                
+                // v_prime = v_minus + v_minus x t
+                const vpx = vmx + (vmy*tz - vmz*ty);
+                const vpy = vmy + (vmz*tx - vmx*tz);
+                const vpz = vmz + (vmx*ty - vmy*tx);
+                
+                // v_plus = v_minus + v_prime x s
+                const vplx = vmx + (vpy*sz - vpz*sy);
+                const vply = vmy + (vpz*sx - vpx*sz);
+                const vplz = vmz + (vpx*sy - vpy*sx);
+                
+                // v_new = v_plus + (q/m)*E*dt/2
+                p.v.x = vplx + E.x * qm_hdt;
+                p.v.y = vply + E.y * qm_hdt;
+                p.v.z = vplz + E.z * qm_hdt;
+                
+                p.pos.x += p.v.x * dt;
+                p.pos.y += p.v.y * dt;
+                p.pos.z += p.v.z * dt;
+                
+                p.mesh.position.copy(p.pos);
+            }
+            time += dt;
+        }
 
-                function load_swarm() {
-                    clear_scene();
-                    scene.camera.pos = vec(0, -30, 40);
-                    scene.center = vec(0, 0, 0);
-                    dt = 0.01;
-
-                    // Central charged magnetic wire
-                    var wire = cylinder({pos: vec(0,0,-30), axis: vec(0,0,60), radius: 1, color: color.blue, emissive: true});
-                    props.push(wire);
-
-                    get_B = function(pos, t) {
-                        // B field of infinite wire B = mu0 I / (2 pi r) in phi direction
-                        var r2 = pos.x*pos.x + pos.y*pos.y;
-                        if (r2 < 1) return vec(0,0,0);
-                        var Bmag = 100 / Math.sqrt(r2);
-                        return vec(-Bmag * pos.y, Bmag * pos.x, 0);
-                    };
-                    
-                    get_E = function(pos, t) {
-                        // E field of infinite charged wire
-                        var r2 = pos.x*pos.x + pos.y*pos.y;
-                        if (r2 < 1) return vec(0,0,0);
-                        var Emag = -50 / r2; // Attractive
-                        return vec(Emag * pos.x, Emag * pos.y, 0);
-                    };
-
-                    for (var i = 0; i < 20; i++) {
-                        var angle = Math.random() * Math.PI * 2;
-                        var r = 10 + Math.random() * 10;
-                        var z = -20 + Math.random() * 40;
-                        var p = sphere({pos: vec(r*Math.cos(angle), r*Math.sin(angle), z), radius: 0.5, color: vec(Math.random(), Math.random(), 1.0), make_trail: true, trail_type: "curve", retain: 200, trail_radius: 0.1, emissive: true});
-                        p.q = 1.0;
-                        p.m = 1.0;
-                        p.v = vec(0, 0, 5 + Math.random()*10); // initial z velocity
-                        particles.push(p);
-                    }
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            
+            if (isRunning) {
+                emitSolarWind();
+                
+                for(let i=0; i<5; i++) {
+                    stepPhysics();
                 }
-
-                function step_physics() {
-                    for (var i = 0; i < particles.length; i++) {
-                        var p = particles[i];
-                        
-                        // Symplectic Euler Integration for better energy conservation in magnetic fields
-                        var E = get_E(p.pos, time);
-                        var B = get_B(p.pos, time);
-                        
-                        var q_m = p.q / p.m;
-                        var vx = p.v.x;
-                        var vy = p.v.y;
-                        var vz = p.v.z;
-                        
-                        var cross_x = vy * B.z - vz * B.y;
-                        var cross_y = vz * B.x - vx * B.z;
-                        var cross_z = vx * B.y - vy * B.x;
-                        
-                        var ax = q_m * (E.x + cross_x);
-                        var ay = q_m * (E.y + cross_y);
-                        var az = q_m * (E.z + cross_z);
-                        
-                        p.v.x += ax * dt;
-                        p.v.y += ay * dt;
-                        p.v.z += az * dt;
-                        
-                        p.pos.x += p.v.x * dt;
-                        p.pos.y += p.v.y * dt;
-                        p.pos.z += p.v.z * dt;
-                        
-                        if (p.glow) p.glow.pos = p.pos;
-                    }
-                    time += dt;
-                }
-
-                var current_config_internal = "";
-
-                while (true) {
-                    await rate(60);
-                    
-                    if (window.current_config !== current_config_internal) {
-                        current_config_internal = window.current_config;
-                        if (current_config_internal === "bottle") load_bottle();
-                        else if (current_config_internal === "cyclotron") load_cyclotron();
-                        else if (current_config_internal === "swarm") load_swarm();
-                    }
-                        
-                    if (window.sim_running) {
-                        for (var i=0; i<5; i++) {
-                            step_physics();
-                        }
-                    }
+                
+                trailUpdateTimer++;
+                if (trailUpdateTimer >= 2) {
+                    for(let p of particles) p.updateTrail();
+                    trailUpdateTimer = 0;
                 }
             }
-            $(function () { window.__context = { glowscript_container: $("#glowscript").removeAttr("id") }; __main__() })
-        })();
+            
+            composer.render();
+        }
+
+        // Boot
+        init();
     </script>
 </body>
 </html>
