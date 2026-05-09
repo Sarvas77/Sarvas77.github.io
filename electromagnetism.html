@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Electromagnetism | Physics Engines</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="ui.js" defer></script>
+</head>
+<body>
+
+<div class="app-container">
+    <nav class="sidebar" id="global-sidebar"></nav>
+
+    <main class="content no-padding">
+        <div class="simulation-wrapper">
+            <div class="sim-header">
+                <div>
+                    <h2>3D Electromagnetism</h2>
+                    <p>Charged particles moving under the Lorentz force ($F = q(E + v \times B)$).</p>
+                </div>
+                <div class="sim-controls">
+                    <button class="btn btn-outline" onclick="toggleSim()">START</button>
+                </div>
+            </div>
+            
+            <div class="iframe-container">
+                <iframe src="ElectroSim.html" id="simFrame" frameborder="0"></iframe>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    let isRunning = false;
+    function toggleSim() {
+        const btn = document.querySelector('.btn-outline');
+        const frame = document.getElementById('simFrame');
+        isRunning = !isRunning;
+        
+        if (isRunning) {
+            btn.innerText = "STOP";
+            btn.classList.add("running");
+            frame.contentWindow.postMessage({type: 'start'}, '*');
+        } else {
+            btn.innerText = "START";
+            btn.classList.remove("running");
+            frame.contentWindow.postMessage({type: 'stop'}, '*');
+        }
+    }
+</script>
+
+</body>
+</html>

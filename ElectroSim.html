@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Electromagnetism Simulations</title>
+    <style>
+        body { margin: 0; padding: 0; overflow: hidden; background: #050505; }
+        canvas { display: block; }
+        #controls {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            color: #ededed;
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(13, 13, 13, 0.85);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #1f1f1f;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 10;
+        }
+        select, button {
+            background: rgba(255, 255, 255, 0.05);
+            color: #64ffda;
+            border: 1px solid #64ffda;
+            padding: 5px 10px;
+            font-family: 'JetBrains Mono', monospace;
+            border-radius: 4px;
+            cursor: pointer;
+            outline: none;
+        }
+        select:hover, button:hover {
+            background: rgba(100, 255, 218, 0.1);
+        }
+        .help-text {
+            color: #888;
+            font-size: 0.8rem;
+            margin-top: 5px;
+        }
+    </style>
+    <!-- GlowScript requirements -->
+    <link type="text/css" href="https://www.glowscript.org/css/redmond/2.1/jquery-ui.custom.css" rel="stylesheet" />
+    <link type="text/css" href="https://www.glowscript.org/css/ide.css" rel="stylesheet" />
+    <script type="text/javascript" src="https://www.glowscript.org/lib/jquery/2.1/jquery.min.js"></script>
+    <script type="text/javascript" src="https://www.glowscript.org/lib/jquery/2.1/jquery-ui.custom.min.js"></script>
+    <script type="text/javascript" src="https://www.glowscript.org/package/glow.3.2.min.js"></script>
+    <script type="text/javascript" src="https://www.glowscript.org/package/RSrun.3.2.min.js"></script>
+</head>
+<body>
+    <div id="controls">
+        <label for="configSelect">Simulation Scenario:</label>
+        <select id="configSelect" onchange="window.changeConfig(this.value)">
+            <option value="bottle">Magnetic Bottle (Trapped Plasma)</option>
+            <option value="cyclotron">Cyclotron Accelerator</option>
+            <option value="swarm">Lorentz Force Swarm</option>
+        </select>
+        <div class="help-text">Right-click + drag to spin.<br>Scroll to zoom.</div>
+    </div>
+
+    <div id="glowscript" class="glowscript"></div>
+
+    <script type="text/javascript">
+        window.sim_running = false;
+        window.current_config = "bottle";
+        window.changeConfig = function(val) {
+            window.current_config = val;
+        };
+
+        window.addEventListener('message', function(e) {
+            if (e.data.type === 'start') {
+                window.sim_running = true;
+            } else if (e.data.type === 'stop') {
+                window.sim_running = false;
+            }
+        });
+        
+        ;(function () {
+            async function __main__() {
+                "use strict";
+                var scene = canvas({title: "", width: window.innerWidth, height: window.innerHeight, background: color.gray(0.05)});
+                scene.camera.pos = vec(0, 0, 50);
+                scene.ambient = color.gray(0.2);
+                scene.autoscale = false;
+                scene.center = vec(0, 0, 0);
+
+                var particles = [];
+                var dt = 0.01;
+                var time = 0;
+                
+                // Electromagnetic field functions
+                var get_E = function(pos, t) { return vec(0,0,0); };
+                var get_B = function(pos, t) { return vec(0,0,0); };
+
+                // Visual field lines/coils
+                var props = [];
+
+                function clear_scene() {
+                    for (var i = 0; i < particles.length; i++) {
+                        particles[i].visible = false;
+                        if (particles[i].glow) particles[i].glow.visible = false;
+                        particles[i].clear_trail();
+                    }
+                    particles = [];
+                    for (var i = 0; i < props.length; i++) {
+                        props[i].visible = false;
+                    }
+                    props = [];
+                    time = 0;
+                }
+
+                function load_bottle() {
+                    clear_scene();
+                    scene.camera.pos = vec(0, 20, 40);
+                    scene.center = vec(0, 0, 0);
+                    dt = 0.02;
+
+                    // Two magnetic coils at z = -20 and z = 20
+                    var R = 15;
+                    var coil1 = ring({pos: vec(0,0,-20), axis: vec(0,0,1), radius: R, thickness: 1, color: color.orange, emissive: true});
+                    var coil2 = ring({pos: vec(0,0,20), axis: vec(0,0,1), radius: R, thickness: 1, color: color.orange, emissive: true});
+                    props.push(coil1);
+                    props.push(coil2);
+
+                    // Magnetic field from two loops
+                    var B0 = 1000;
+                    get_B = function(pos, t) {
+                        // Approximation of magnetic bottle field near axis
+                        // B_z(z) = B0 * (1 + (z/10)^2)
+                        // B_r(r, z) = - (r/2) * d B_z / dz
+                        var z = pos.z;
+                        var r = Math.sqrt(pos.x*pos.x + pos.y*pos.y);
+                        
+                        var Bz = B0 * (1 + Math.pow(z/15, 2));
+                        var dPz_dz = B0 * 2 * z / 225; // derivative of Bz w.r.t z
+                        var Br = - (r / 2) * dPz_dz;
+                        
+                        var angle = Math.atan2(pos.y, pos.x);
+                        var Bx = Br * Math.cos(angle);
+                        var By = Br * Math.sin(angle);
+                        
+                        return vec(Bx, By, Bz);
+                    };
+                    get_E = function(pos, t) { return vec(0,0,0); };
+
+                    // Add particles
+                    var colors = [color.cyan, color.magenta, color.green, color.yellow];
+                    for (var i = 0; i < 4; i++) {
+                        var angle = i * Math.PI / 2;
+                        var p = sphere({pos: vec(5*Math.cos(angle), 5*Math.sin(angle), 0), radius: 0.5, color: colors[i], make_trail: true, trail_type: "curve", retain: 400, trail_radius: 0.2, emissive: true});
+                        p.q = 1.0;
+                        p.m = 1.0;
+                        // Give them velocity in xy plane (cyclotron) and z (bouncing)
+                        p.v = vec(-10*Math.sin(angle), 10*Math.cos(angle), 15); 
+                        p.glow = sphere({pos: p.pos, radius: 1.5, color: p.color, opacity: 0.3, shininess: 0, emissive: true});
+                        particles.push(p);
+                    }
+                }
+
+                function load_cyclotron() {
+                    clear_scene();
+                    scene.camera.pos = vec(0, 0, 50);
+                    scene.center = vec(0, 0, 0);
+                    dt = 0.01;
+
+                    // D-plates visualization
+                    var D1 = cylinder({pos: vec(-1,0,0), axis: vec(-20,0,0), radius: 20, color: color.gray(0.5), opacity: 0.2});
+                    var D2 = cylinder({pos: vec(1,0,0), axis: vec(20,0,0), radius: 20, color: color.gray(0.5), opacity: 0.2});
+                    props.push(D1, D2);
+
+                    var omega = 10.0; // Cyclotron frequency qB/m = 1*10/1 = 10
+                    
+                    get_B = function(pos, t) {
+                        return vec(0, 0, 10);
+                    };
+                    
+                    get_E = function(pos, t) {
+                        // Alternating E field only in the gap between x=-1 and x=1
+                        if (Math.abs(pos.x) < 1.0) {
+                            var Ex = 50 * Math.cos(omega * t);
+                            return vec(Ex, 0, 0);
+                        }
+                        return vec(0, 0, 0);
+                    };
+
+                    var p = sphere({pos: vec(0, 0.1, 0), radius: 0.8, color: color.red, make_trail: true, trail_type: "curve", retain: 1000, trail_radius: 0.3, emissive: true});
+                    p.q = 1.0;
+                    p.m = 1.0;
+                    p.v = vec(0, 2, 0);
+                    p.glow = sphere({pos: p.pos, radius: 2.0, color: p.color, opacity: 0.3, shininess: 0, emissive: true});
+                    particles.push(p);
+                }
+
+                function load_swarm() {
+                    clear_scene();
+                    scene.camera.pos = vec(0, -30, 40);
+                    scene.center = vec(0, 0, 0);
+                    dt = 0.01;
+
+                    // Central charged magnetic wire
+                    var wire = cylinder({pos: vec(0,0,-30), axis: vec(0,0,60), radius: 1, color: color.blue, emissive: true});
+                    props.push(wire);
+
+                    get_B = function(pos, t) {
+                        // B field of infinite wire B = mu0 I / (2 pi r) in phi direction
+                        var r2 = pos.x*pos.x + pos.y*pos.y;
+                        if (r2 < 1) return vec(0,0,0);
+                        var Bmag = 100 / Math.sqrt(r2);
+                        return vec(-Bmag * pos.y, Bmag * pos.x, 0);
+                    };
+                    
+                    get_E = function(pos, t) {
+                        // E field of infinite charged wire
+                        var r2 = pos.x*pos.x + pos.y*pos.y;
+                        if (r2 < 1) return vec(0,0,0);
+                        var Emag = -50 / r2; // Attractive
+                        return vec(Emag * pos.x, Emag * pos.y, 0);
+                    };
+
+                    for (var i = 0; i < 20; i++) {
+                        var angle = Math.random() * Math.PI * 2;
+                        var r = 10 + Math.random() * 10;
+                        var z = -20 + Math.random() * 40;
+                        var p = sphere({pos: vec(r*Math.cos(angle), r*Math.sin(angle), z), radius: 0.5, color: vec(Math.random(), Math.random(), 1.0), make_trail: true, trail_type: "curve", retain: 200, trail_radius: 0.1, emissive: true});
+                        p.q = 1.0;
+                        p.m = 1.0;
+                        p.v = vec(0, 0, 5 + Math.random()*10); // initial z velocity
+                        particles.push(p);
+                    }
+                }
+
+                function step_physics() {
+                    for (var i = 0; i < particles.length; i++) {
+                        var p = particles[i];
+                        
+                        // Symplectic Euler Integration for better energy conservation in magnetic fields
+                        var E = get_E(p.pos, time);
+                        var B = get_B(p.pos, time);
+                        
+                        var q_m = p.q / p.m;
+                        var vx = p.v.x;
+                        var vy = p.v.y;
+                        var vz = p.v.z;
+                        
+                        var cross_x = vy * B.z - vz * B.y;
+                        var cross_y = vz * B.x - vx * B.z;
+                        var cross_z = vx * B.y - vy * B.x;
+                        
+                        var ax = q_m * (E.x + cross_x);
+                        var ay = q_m * (E.y + cross_y);
+                        var az = q_m * (E.z + cross_z);
+                        
+                        p.v.x += ax * dt;
+                        p.v.y += ay * dt;
+                        p.v.z += az * dt;
+                        
+                        p.pos.x += p.v.x * dt;
+                        p.pos.y += p.v.y * dt;
+                        p.pos.z += p.v.z * dt;
+                        
+                        if (p.glow) p.glow.pos = p.pos;
+                    }
+                    time += dt;
+                }
+
+                var current_config_internal = "";
+
+                while (true) {
+                    await rate(60);
+                    
+                    if (window.current_config !== current_config_internal) {
+                        current_config_internal = window.current_config;
+                        if (current_config_internal === "bottle") load_bottle();
+                        else if (current_config_internal === "cyclotron") load_cyclotron();
+                        else if (current_config_internal === "swarm") load_swarm();
+                    }
+                        
+                    if (window.sim_running) {
+                        for (var i=0; i<5; i++) {
+                            step_physics();
+                        }
+                    }
+                }
+            }
+            $(function () { window.__context = { glowscript_container: $("#glowscript").removeAttr("id") }; __main__() })
+        })();
+    </script>
+</body>
+</html>

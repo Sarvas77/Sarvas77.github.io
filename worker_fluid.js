@@ -14,12 +14,39 @@ let Vy = new Float32Array((N + 2) * (N + 2));
 let Vx0 = new Float32Array((N + 2) * (N + 2));
 let Vy0 = new Float32Array((N + 2) * (N + 2));
 
+// Loop
+let intervalId = null;
+
 onmessage = function(e) {
     const data = e.data;
     if (data.type === 'init') {
         size = data.size || 64;
         N = size;
         reset();
+    } else if (data.type === 'stop') {
+        if (intervalId) {
+            clearInterval(intervalId);
+            intervalId = null;
+        }
+    } else if (data.type === 'start') {
+        if (!intervalId) {
+            intervalId = setInterval(() => {
+                step();
+                // Fade out density
+                for (let i = 0; i < density.length; i++) {
+                    density[i] *= 0.99;
+                    Vx[i] *= 0.99; // Slowly dampen velocity
+                    Vy[i] *= 0.99;
+                }
+                // Transfer buffer back
+                postMessage({
+                    type: 'update',
+                    density: density,
+                    Vx: Vx,
+                    Vy: Vy
+                });
+            }, 1000 / 60);
+        }
     } else if (data.type === 'input') {
         const i = data.i;
         const j = data.j;
@@ -144,21 +171,3 @@ function set_bnd(b, x) {
     x[IX(N + 1, 0)] = 0.5 * (x[IX(N, 0)] + x[IX(N + 1, 1)]);
     x[IX(N + 1, N + 1)] = 0.5 * (x[IX(N, N + 1)] + x[IX(N + 1, N)]);
 }
-
-// Loop
-setInterval(() => {
-    step();
-    // Fade out density
-    for (let i = 0; i < density.length; i++) {
-        density[i] *= 0.99;
-        Vx[i] *= 0.99; // Slowly dampen velocity
-        Vy[i] *= 0.99;
-    }
-    // Transfer buffer back
-    postMessage({
-        type: 'update',
-        density: density,
-        Vx: Vx,
-        Vy: Vy
-    });
-}, 1000 / 60);

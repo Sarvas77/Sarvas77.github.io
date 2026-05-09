@@ -28,6 +28,7 @@
         const N = 64;
         let scale;
         let worker;
+        let isRunning = false;
         
         // Fluid fields
         let Vx = new Float32Array((N + 2) * (N + 2));
@@ -82,16 +83,17 @@
             draw() {
                 let speed = this.vel.mag();
                 
-                // Color maps to speed (Slow = Purple, Fast = Cyan/Mint)
-                let r = map(speed, 0, 6, 100, 100);
-                let g = map(speed, 0, 6, 0, 255);
-                let b = map(speed, 0, 6, 255, 218);
+                // Dynamic rainbow effect based on time and speed
+                let phase = frameCount * 0.05 + speed;
+                let r = 150 + 105 * Math.sin(phase);
+                let g = 150 + 105 * Math.sin(phase + 2);
+                let b = 150 + 105 * Math.sin(phase + 4);
                 
                 // Fade out as life ends
-                let alpha = map(this.life, 0, 20, 0, 200, true);
+                let alpha = map(this.life, 0, 20, 0, 255, true);
                 
                 stroke(r, g, b, alpha);
-                strokeWeight(1.5);
+                strokeWeight(speed > 2 ? 2.0 : 1.0); // Dynamic thickness based on speed
                 point(this.pos.x, this.pos.y);
             }
         }
@@ -114,11 +116,26 @@
                 }
             };
             worker.postMessage({ type: 'init', size: N });
+
+            noLoop(); // Start paused
+            window.addEventListener('message', function(e) {
+                if (e.data.type === 'start') {
+                    isRunning = true;
+                    worker.postMessage({ type: 'start' });
+                    loop();
+                } else if (e.data.type === 'stop') {
+                    isRunning = false;
+                    worker.postMessage({ type: 'stop' });
+                    noLoop();
+                }
+            });
         }
 
         function draw() {
-            // Fade background for trails
-            fill(0, 15);
+            if (!isRunning) return;
+
+            // Fade background for trails, slightly darker for better contrast
+            fill(0, 20);
             noStroke();
             rect(0, 0, width, height);
             

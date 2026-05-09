@@ -1,0 +1,774 @@
+\documentclass[twocolumn,showpacs,showkeys,preprintnumbers,amsmath,amssymb]{revtex4}
+%\documentclass[preprint,showpacs,preprintnumbers,amsmath,amssymb]{revtex4}
+
+% Some other (several out of many) possibilities
+%\documentclass[preprint,aps]{revtex4}
+%\documentclass[preprint,aps,draft]{revtex4}
+%\documentclass[prb]{revtex4}% Physical Review B
+
+\usepackage{graphicx}% Include figure files
+\usepackage{dcolumn}% Align table columns on decimal point
+\usepackage{bm}% bold math
+
+\def\bfgrk #1{\mbox{\boldmath$#1$}}
+\def\Slash#1{/\hspace{-0.23cm}{#1}}
+\def\eps{\epsilon}
+\def\ds{\displaystyle}
+
+%\documentclass[12pt]{article}
+%\topmargin 0.0cm
+%\oddsidemargin 0.2cm
+%\textwidth 16cm 
+%\textheight 21cm
+%\footskip 1.0cm
+
+%\usepackage{scicite}
+
+% Use times if you have the font installed; otherwise, comment out the
+% following line.
+
+%\usepackage{times}
+
+% The following parameters seem to provide a reasonable page setup.
+
+%\topmargin 0.0cm
+%\oddsidemargin 0.2cm
+%\textwidth 16cm 
+%\textheight 21cm
+%\footskip 1.0cm
+
+
+%The next command sets up an environment for the abstract to your paper.
+
+%\newenvironment{sciabstract}{%
+%\begin{quote} \bf}
+%{\end{quote}}
+
+
+% If your reference list includes text notes as well as references,
+% include the following line; otherwise, comment it out.
+
+%\renewcommand\refname{References and Notes}
+
+% The following lines set up an environment for the last note in the
+% reference list, which commonly includes acknowledgments of funding,
+% help, etc.  It's intended for users of BibTeX or the {thebibliography}
+% environment.  Users who are hand-coding their references at the end
+% using a list environment such as {enumerate} can simply add another
+% item at the end, and it will be numbered automatically.
+
+%\newcounter{lastnote}
+%\newenvironment{scilastnote}{%
+%\setcounter{lastnote}{\value{enumiv}}%
+%\addtocounter{lastnote}{+1}%
+%\begin{list}%
+%{\arabic{lastnote}.}
+%{\setlength{\leftmargin}{.22in}}
+%{\setlength{\labelsep}{.5em}}}
+%{\end{list}}
+\begin{document}
+
+\title{Three Classes of Newtonian Three-Body Planar Periodic Orbits} 
+
+%\author{Milovan \v Suvakov and V. Dmitra\v sinovi\' c}
+%\normalsize{$^{1}$ Institute of Physics, Belgrade University,}\\
+%\normalsize{Pregrevica 118, Zemun, P.O.Box 57, 11080 Beograd, Serbia}\\
+%\normalsize{$^\ast$To whom correspondence should be addressed; E-mail: dmitrasin@ipb.ac.rs}}
+
+\author{Milovan \v Suvakov}
+\email{suki@ipb.ac.rs}
+\author{V. Dmitra\v sinovi\' c}
+\email{dmitrasin@ipb.ac.rs}
+
+\affiliation{Institute of Physics Belgrade, University of Belgrade, Pregrevica 118, 11080 Beograd, Serbia }
+
+%\date{\today}% It is always \today, today,
+             %  but any date may be explicitly specified
+
+%\date{}
+
+
+
+%%%%%%%%%%%%%%%%% END OF PREAMBLE %%%%%%%%%%%%%%%%
+
+
+
+%\begin{document} 
+
+% Double-space the manuscript.
+
+%\baselineskip24pt
+
+
+%\maketitle 
+
+
+%\begin{sciabstract}
+\begin{abstract}
+We present the results of a numerical search for periodic orbits of three
+equal masses moving in a plane
+under the influence of Newtonian gravity, with zero angular momentum. A
+topological method is used to
+classify periodic three-body orbits into families, which fall into four
+classes, with all three previously
+known families belonging to one class. The classes are defined by the
+orbits’ geometric and algebraic
+symmetries. In each class we present a few orbits’ initial conditions, 15 in
+all; 13 of these correspond to
+distinct orbits.
+
+\end{abstract}
+%\end{sciabstract}
+\pacs{45.50.Jf, 5.45.-a, 95.10.Ce}
+%, 11.25.-w}
+% PACS, the Physics and Astronomy
+% Classification Scheme.
+%\keywords{Three-body systems in classical mechanics; Nonlinear dynamics}
+
+%Use showkeys class option if keyword
+
+\maketitle   
+
+%\section*{\noindent{\bf Introduction}
+
+After Bruns showed that there are 18 degrees-of-freedom, but only 10 integrals-of-motion 
+in the dynamics of three Newtonian bodies, late in the 19th century, Ref. \cite{Bruns1887}, 
+it has been clear that the three-body problem can not be solved in the same sense 
+as the two-body one. That realization led to Poincar\'{e}'s famous {\it dictum} \cite{Poincare1899}
+``... what makes these (periodic) solutions so precious to us, is that 
+they are, so to say, the only opening through which we can try to penetrate 
+in a place which, up to now, was supposed to be inaccessible''.
+Consequently (new) periodic three-body solutions have been sought ever since, 
+though a significant number were found only after 1975. 
+%Periodic three-body solutions have been actively sought for a long time, 
+%though a significant number were found only after 1975. 
+They may be classified in three families: 
+1) the Lagrange-Euler one, dating back to the eighteenth century analytical 
+solutions, supplemented by one recent orbit due to Moore \cite{Moore1993},
+2) the Broucke-Henon-Hadjidemetriou family, dating to the mid-1970s
+\cite{Broucke1975,Hadjidemetriou1975b,Hadjidemetriou1975c,Broucke1975b,Henon1976,Henon:1977}
+with periodic rediscoveries of certain members of this family
+\cite{Moore1993,Vanderbei:2004}, and 3) the Figure-8 family discovered by Moore in 1993, 
+Ref. \cite{Moore1993}, rediscovered in 2000, Ref. \cite{Chenciner2000}, and extended 
+to the rotating case in Refs.
+\cite{Nauenberg2001,Chenciner2002,Simo2002,Chenciner2005,Broucke2006,Nauenberg2007},
+(see also Ref. \cite{Suvakov:2012b} and the gallery of orbits in Ref.
+\cite{gallery}).
+
+The aforementioned rediscoveries raise the issue of proper identification and 
+classification of periodic three-body trajectories. Moore \cite{Moore1993} used 
+braids drawn out by the three particles' trajectories in 2+1 dimensional space-time, 
+Ref. \cite{Prasolov1997}, to label periodic solutions. 
+This method does not associate a periodic orbit with a single braid, however, but 
+with the ``conjugacy class'' of a braid group element, i.e., with all cyclic 
+permutations of the strand crossings %braid group elements 
+constituting a particular braid.
+While reasonably effective for the identification of individual orbits, 
+braids are less efficient at classifying orbits into families.
+
+Montgomery \cite{Montgomery1998} suggested using the topological
+properties of trajectories on the so-called shape-space sphere \cite{Iwai1987a}
+to classify families of three-body orbits. That method
+%has turned out to be both efficient and inspiring: it 
+led Chenciner and Montgomery to their rediscovery of the figure-8 orbit \cite{Chenciner2000} and informed the present study. 
+No solutions belonging to new topological classes ``higher'' than the 
+figure-8 one have been found in Newtonian gravity since then, however.
+
+Here we report the results of our ongoing numerical search for periodic collisionless
+planar solutions with zero-angular-momentum in a two-parameter subspace of (the full 
+four-dimensional space of) scaled zero-angular momentum initial conditions. 
+This subspace is defined as that of collinear configurations with one 
+body exactly in the middle between the other two, with vanishing angular momentum 
+and vanishing time derivative of the hyper-radius at the initial time. 
+At first we found around 50 different regions containing candidates for periodic orbits, 
+at return proximity of $10^{-1}$ in the phase space, in this section of the 
+initial conditions space. Then, we refined these initial conditions to the 
+level of return proximity of less then $< 10^{-6}$ by using the gradient 
+descent method. Here we present 15 solutions, which can be 
+classified into 13 topologically distinct families. This is because two pairs of 
+initial conditions specify only two independent solutions, as the respective 
+members of the pairs are related by a simple rescaling 
+of space and time.
+Before describing these orbits and their families we must specify %Montgomery's 
+the topological classification method more closely.
+\begin{figure*}[tbp]
+\centerline{\includegraphics[width=7in,,keepaspectratio]{prl.eps}}
+\caption{The (translucent) shape-space sphere, with its back side also visible 
+here. Three two-body collision points (bold red circles) - punctures in the sphere - 
+lie on the equator.
+%Collisionless periodic orbits cannot be continuously ``stretched'' over any of 
+%these three punctures, which uniquely determines their topology. 
+(a) The solid black line encircling the shape sphere twice is the figure-8 orbit.
+(b) Class I.A butterfly I orbit (I.A.1). Note the two reflection symmetry axes.
+(c) Class I.B moth I orbit (I.B.1) on the shape-space sphere. Note the two reflection symmetry axes.
+(d) Class II.B yarn orbit (II.B.1) on the shape-space sphere. Note the single-point reflection symmetry.
+(e) Class II.C yin-yang I orbit (II.C.2) on the shape-space sphere. Note the single-point reflection symmetry.
+(f) An illustration of a real space orbit, the ``yin-yang II" orbit (II.C.3a). }
+\label{f:sphere}
+\end{figure*}
+
+%\subsection*{\noindent{\bf Topological classification of orbits} 
+%in the shape space}
+%\label{s:classification}
+
+Montgomery \cite{Montgomery1998} noticed the connection between the 
+``fundamental group of a two sphere with three punctures,'' i.e., 
+the ``free group on two letters'' $(a,b)$, and the conjugacy classes 
+of the ``projective coloured or pure braid group'' of three strands $PB_3$. 
+Graphically, this method amounts to classifying closed curves according to 
+their topologies on a sphere with three punctures. A stereographic projection of
+this sphere onto a plane, using one of the punctures as the ``north pole'' 
+effectively removes that puncture to infinity, and reduces the problem to one 
+of classifying closed curves in a plane with two punctures. That leads to the 
+aforementioned free group on two letters $(a,b)$, where (for definiteness) 
+$a$ denotes a clockwise full turn around the right-hand-side puncture, 
+and $b$ denotes the counterclockwise full turn around the other puncture, see Ref. 
+\cite{Suvakov:2012b}. 
+For better legibility we denote their inverses by capitalized letters $a^{-1}=A$, 
+$b^{-1}=B$. Each family of orbits is associated with the conjugacy class of 
+a free group element. For example the conjugacy class of the free group element 
+$aB$ contains $A(aB)a = Ba$. 
+To appreciate the utility of this classification one must first identify the 
+two-sphere with three punctures with the shape-space sphere 
+and the three two-body collision points with the punctures. 
+
+%\subsection*{\noindent{\bf The shape-space sphere}\label{s:shape space}
+
+With two three-body Jacobi relative coordinate vectors,
+${\bfgrk \rho} = \frac{1}{\sqrt{2}}({\bf x_1} - {\bf x_2})$, 
+${\bfgrk \lambda} = \frac{1}{\sqrt{6}}({\bf x_1} + {\bf x_2} - 
+2 {\bf x_3})$,
+there are three independent scalar three-body variables, i.e., 
+${\bm \rho} \cdot {\bm \lambda}$, ${\bm \rho}^2$, and ${\bm
+\lambda}^2$. Thus the ``internal configuration space'' of the 
+planar three-body problem is three-dimensional. The hyper-radius 
+$R = \sqrt{\rho^{2} + \lambda^{2}}$ 
+defines the overall size of the system and removes one of 
+the three linear combinations of scalar variables. Thus,
+one may relate the three scalars to a (unit) hyperspace 
+three-vector ${\hat {\bf n}}$ with the Cartesian components 
+$n_x^{'} = \frac{2 {\bm \rho} \cdot {\bm \lambda}}{R^2}$, 
+$n_y^{'} = \frac{2 {\bm \rho} \times {\bm \lambda}}{R^2}$ 
+and $n_z^{'} = \frac{\lambda^2 - \rho^2}{R^2}$. 
+The domain of these three-body variables is a sphere with
+unit radius \cite{Iwai1987a}, see Ref. \cite{Suvakov:2012b} 
+and Fig. \ref{f:sphere}(a). The equatorial circle corresponds
+to collinear configurations (degenerate triangles) and the 
+three points on it correspond to the two-body collisions 
+(these are Montgomery's ``punctures'').  
+
+%The initial conditions for all of the above orbits and their periods (T) are 
+%listed in Table \ref{tab:drcc2n}.
+%===============================================================
+\begin{table*}[tbh]
+%\onecolumngrid
+\begin{center} 
+%\onecolumngrid
+\caption{Initial conditions and periods of three-body orbits.
+${\dot x}_{1}(0), {\dot y}_{1}(0)$ are the first particle's initial 
+velocities in the $x$ and $y$ directions, respectively, $T$ is the period. 
+The other two particles' initial conditions are specified by these two parameters, 
+as follows,  
+$x_1(0)=-x_2(0)=-1$, $x_3(0)=0$, $y_1(0)=y_2(0)=y_3(0)=0$,  
+$\dot x_2(0)=\dot x_1(0)$, $\dot x_3(0)=-2\dot x_1(0)$, $\dot y_2(0)=\dot y_1(0)$,
+$\dot y_3(0)=-2\dot y_1(0)$. The Newton's gravity coupling constant $G$ is taken as 
+$G=1$ and equal masses as $m_{1,2,3}=1$. 
+All solutions have ``inversion partners'' (mirror images) in all four quadrants, i.e. if 
+${\dot x}_{1}(0), {\dot y}_{1}(0)$ is a solution, so are $\pm {\dot x}_{1}(0), \pm {\dot y}_{1}(0)$.
+Some of these partners are exactly identical to the originals, others are identical up
+to time reversal, and yet others are related to the originals by a reflection; we
+consider all of them to be physically equivalent to the originals.
+Note that two pairs of initial conditions in the same quadrant (II.C.2a and II.C.2b; 
+and II.C.3a and II.C.3b) specify only two independent solutions; see 
+the text for explanation.}
+%as the two orbits in each respective pair are related 
+%by a rotation and rescaling of space and rescaling of time. 
+%This is due to the fact that their shape space trajectories 
+%passes through the same point with different velocities.}
+\begin{tabular}{lc@{\hskip 0.1in}c@{\hskip 0.1in}c@{\hskip 0.1in}l}
+\hline \hline 
+\setlength
+{\rm Class, number and name} & ${\dot x}_{1}(0)$ & ${\dot y}_{1}(0)$ & ${\rm T}$ & {\rm Free group element} \\
+\hline
+\hline
+I.A.1 butterfly I & 0.30689 & 0.12551 & 6.2356 & $(ab)^2 (AB)^2$ \\ % (B6)
+I.A.2 butterfly II & 0.39295 & 0.09758 & 7.0039 & $(ab)^2 (AB)^2$ \\ % (B9)
+I.A.3 bumblebee & 0.18428 & 0.58719 & 63.5345 & $(b^2 (ABab)^2 A^2 (baBA)^2 ba) (B^2 (abAB)^2 a^2 (BAba)^2 BA)$  \\ % (B33)
+\hline
+I.B.1 moth I & 0.46444 & 0.39606 & 14.8939 & $ba(BAB)ab(ABA)$ \\ % (B23)
+I.B.2 moth II & 0.43917 & 0.45297 & 28.6703 &  $(abAB)^2 A (baBA)^2 B$  \\ % (B19)
+I.B.3 butterfly III & 0.40592 & 0.23016 & 13.8658 & $(ab)^2(ABA)(ba)^2(BAB)$ \\ % (B21)
+I.B.4 moth III & 0.38344 & 0.37736 & 25.8406 & $(babABA)^2 a (abaBAB)^2 b$ \\ % (B22)
+I.B.5 goggles & 0.08330 & 0.12789 & 10.4668 &  $(ab)^2 ABBA (ba)^2 BAAB$ \\ % (B25)
+I.B.6 butterfly IV & 0.350112 & 0.07934 & 79.4759 & $((ab)^2 (AB)^2)^6 A((ba)^2 (BA)^2)^6 B$ \\ % (ZZZZ)
+I.B.7 dragonfly & 0.08058 & 0.58884 & 21.2710 & $(b^2(ABabAB))(a^2(BAbaBA))$ \\ % (B24)
+%\hline
+\hline
+II.B.1 yarn & 0.55906 & 0.34919 & 55.5018 & $(babABabaBA)^3$ \\ % (B13)
+II.C.2a yin-yang I & 0.51394 & 0.30474 & 17.3284 & $(ab)^2(ABA)ba(BAB)$ \\ % (B12)
+II.C.2b yin-yang I & 0.28270 & 0.32721 & 10.9626 & $(ab)^2(ABA)ba(BAB)$ \\ % (B20)
+II.C.3a yin-yang II & 0.41682  & 0.33033 & 55.7898 & $(abaBAB)^3 (abaBAbab)(ABAbab)^3 (AB)^2$  \\ % (B30)
+II.C.3b yin-yang II & 0.41734  & 0.31310 & 54.2076 & $(abaBAB)^3 (abaBAbab)(ABAbab)^3 (AB)^2$  \\ % (B34)
+\hline
+\hline
+\end{tabular}
+\label{tab:drcc2n}
+\end{center}
+\end{table*}
+%===============================================================
+%\section*{\noindent{\bf Discussion}
+%\label{s:concl}
+
+If one disallows collisions in a periodic orbit, then the orbit's trajectory 
+on the sphere cannot be continuously stretched over any one of these three 
+punctures, and the orbit's characteristic conjugacy class is thereby fixed; 
+in this sense the topology characterizes the orbit.
+Thus, periodic solutions belonging to a single collisionless family are topologically 
+equivalent closed curves on the shape-space sphere with three punctures in it. 
+For example, the three previously known families of orbits in shape space are shown in
+Ref. \cite{Suvakov:2012b}.
+
+%\noindent{\bf 
+%\section*{Classes of orbits} 
+
+One may divide the orbits into two types according to their symmetries in the shape space: 
+(I) those with reflection symmetries about two orthogonal axes - the equator
+and the zeroth meridian passing through the ``far'' collision point; and 
+(II) those with a central reflection symmetry about a single point - the intersection
+of the equator and the aforementioned zeroth meridian.
+Similarly, one may divide the orbits according to algebraic exchange symmetries of 
+(conjugacy classes of) their free group elements: (A) with free group elements that are symmetric under 
+$a \leftrightarrow A$ and $b \leftrightarrow B$, 
+(B) with free group elements symmetric under $a \leftrightarrow b$ and $A \leftrightarrow
+B$, and
+(C) with free group elements that are not symmetric under either of the two symmetries
+(A) or (B).
+We have observed empirically that, for all presently known orbits, the algebraic symmetry class 
+(A) always corresponds to the geometric class (I), and that the algebraic class
+(C) always corresponds 
+to the geometric class (II), whereas the algebraic class (B) may  fall into either of the two geometric classes.
+The first examples, to our knowledge, of higher topology trajectories on the
+shape-space sphere are the two (new) zero-angular-momentum periodic solutions reported in 
+Ref. \cite{Suvakov:2010}, albeit in a different (the so-called Y-string) potential. Here
+we show only the new orbits in Newtonian gravity.
+
+%\subsubsection*{\noindent{\bf Doubly symmetric class}
+%\label{s:1ds shape space}
+
+\noindent{\bf (I.A)} As new members of this class, we present 
+three orbits in Table \ref{tab:drcc2n}: butterflies I \& II and the bumblebee. 
+We show the butterfly I in Fig. \ref{f:sphere}(b). 
+The butterfly's free group element is $(ab)^2 (AB)^2$. Note its close relation to the figure-8 
+orbit's free group element $(ab)(AB)$ - both orbits belong to this class.
+%\begin{figure}[tbp]
+%\centerline{\includegraphics[width=2.5in,,keepaspectratio]{tbf.eps}}
+%\caption{An example of class I.A ``butterfly I'' orbit (I.A.1) on the 
+%shape-space sphere. %Its free group element is $(ab)^2 (AB)^2$.
+%Note the two reflection symmetry axes.} 
+%\label{f:BF_spher}
+%\end{figure}
+We have found two distinct butterfly orbits with the same topology (see Table \ref{tab:drcc2n})
+but with different periods and sizes of trajectories, both on the shape sphere and in 
+real space, see Ref. \cite{Suvakov:2012b}. 
+This kind of multiplicity of solutions is not the first one of its kind: there are two 
+(very similar in appearance, yet distinct) kinds of figure-8, \cite{Simo2002}. 
+%Moreover, there is a geometrically different ``bumblebee'' orbit in this class, as well,
+%see Table \ref{tab:drcc2n} and SI.
+
+\noindent{\bf (I.B)} An example of this class of solutions is the 
+moth I orbit, shown in Fig. \ref{f:sphere}(c). 
+%two axes of symmetry in the shape space, and the free group element $ab(ABA)ba(BAB)$.
+%\begin{figure}[tbp]
+%\centerline{\includegraphics[width=2.5in,,keepaspectratio]{B23S.eps}}
+%\caption{The ``moth I" orbit (I.B.1) on the shape-space sphere. 
+%Its free group element is $ab(ABA)ba(BAB)$. 
+%Note the two reflection symmetry axes.}
+%The shape-space sphere is depicted translucently, with its ``back-side'' also visible. 
+%Three two-body collision points (bold red) - ``punctures'' in the sphere - 
+%li on the equator.} 
+%\label{f:moth1_spher}
+%\end{figure}
+We have found a number of other solutions that 
+belong to this class of solutions with visibly different geometrical patterns
+on the shape sphere and different free group elements; see Table
+\ref{tab:drcc2n} and Ref. \cite{Suvakov:2012b}.
+%They include, but are not limited to the ``goggles'' orbit,
+%see Table \ref{tab:drcc2n} and Ref. \cite{Suvakov:2012b}.
+
+%\noindent{\bf 
+%\subsection*{Centrally symmetric class}
+
+\noindent{\bf (II.B)} An example of this class of solutions with algebraic symmetry (B), 
+but with only a central geometric symmetry, is the yarn orbit (II.B.1), shown in 
+Fig. \ref{f:sphere}(d). 
+
+\noindent{\bf (II.C)} An example of this class without algebraic symmetries
+is the simplest zero-angular-momentum yin-yang I orbit (II.C.2), 
+shown in Fig. \ref{f:sphere}(e).  
+There are two different sets of initial conditions (see Table
+\ref{tab:drcc2n}) that lead 
+to the same yin-yang orbit in shape space, due to the fact that this trajectory crosses 
+the initial configuration on the shape-space sphere twice in one period, albeit with different 
+velocities. 
+Therefore the two sets of initial conditions have different energies, so that their periods 
+are different, yet both correspond to the same orbit, {\it modulo} rescaling of the 
+space and time, see Ref. \cite{Broucke1975b}. 
+We have found four sets of initial conditions (see Table  \ref{tab:drcc2n}) 
+corresponding to two distinct (i.e. having different free group elements) solutions
+that belong to this (yin-yang) general class.
+All yin-yang orbits seem to emerge from a single quasi-one-dimensional periodic 
+orbit with collisions \cite{Suvakov:2012b},
+very much like the Broucke-Henon-Hadjidemetriou ones emerge from the Schubart
+(colliding) orbit \cite{Schubart1956}.
+
+In conclusion, we have shown 13 new, distinct equal mass, zero-angular-momentum, 
+planar collision-less periodic three-body orbits that can be classified in 
+three new (and one old) classes. If the figure-8 orbit and its family can be 
+used as a benchmark, then we expect each of the new orbits to define a 
+family of periodic solutions with nonzero angular momentum. We expect our solutions 
+to be either stable or marginally unstable, as otherwise they probably would not 
+have been found by the present method. 
+%On the average, one expects thus found solutions
+%to be more stable than those found by variation of the action.
+
+No three objects with equal masses and zero angular momentum, have been found by observational
+astronomers, as yet, so our solutions cannot be directly compared with observed data
+\cite{footnote1}.
+%\footnote{Theoretical calculations of the outcome of binary-on-binary ``scattering'' have been done, 
+%however, with the outcome of three body systems that correspond to the figure-8 solution, 
+%Ref. \cite{Heggie:2000ad}.}.
+Most of the three-body systems identified in observations thus far belong either to the 
+(Euler-)Lagrange class, or to the quasi-Keplerian
+Broucke-Hadjidemetriou-Henon class of solutions.
+%Ref. \cite{Suvakov:2012b}.
+
+Besides obvious questions, such as the study of stability, and the search for the associated 
+nonzero-angular-momentum solutions, there are other directions for future research, such as the 
+nonequal mass solutions \cite{Galán2002}, the general-relativistic extensions of these orbits 
+Ref. \cite{Imai:2007gn}, as well as the gravitational wave patterns that they generate 
+\cite{Chiba:2006ad,Torigoe:2009bw}. 
+
+Having searched in only one two-dimensional section of the full four-dimensional
+space of initial conditions, we expect other types of orbits to appear, 
+[single members of which have already been seen e.g. the goggles and the dragonfly 
+orbits, in Ref. \cite{Suvakov:2012b}], in different sections of the full space of initial conditions.
+Last, but not least, new numerical solutions in the Newtonian potential may lead to new 
+analytical solutions, for example of the kind found in Ref. \cite{Fujiwara2003a} after 
+the numerical discovery of the figure-8 orbit, albeit in the $-1/r^2$ potential. 
+Thus, our work may shed further light on the three-body problem. 
+
+%\noindent{\bf Acknowledgments}
+%\label{ack}
+
+This work was supported by the Serbian Ministry of Education, Science and
+Technological Development under Grant No. OI 171037 and No. III 41011. 
+%An official of the Ministry has demanded the insertion of ``Belgrade University'' 
+%into the byline of all our papers, albeit not under the terms of the contract. 
+
+\begin{thebibliography}{20}
+
+\bibitem{Bruns1887}
+E.H. Bruns, 
+%{\it ``Uber die Integrale des Vielk{\" o}rper-Problems''}
+Acta Math. {\bf 11}, 25 (1887).
+
+\bibitem{Poincare1899}
+%Chenciner2004}
+H. Poincar{\' e}, chapter XXIX, no 341, in
+%New Methods of Celestial Mechanics, volume III, chapter XXIX, no 341, (1899).
+{\it Les m{\' e}thodes nouvelles de la m{\' e}canique c{\' e}leste}, tomes I (1892) 
+\& III (1899), R{\' e}{\' e}dition Blanchard, Paris (1987), 
+(in French, the sentence translated by A. Chenciner).
+
+\bibitem{Moore1993}
+C. Moore, 
+%{\it ``Braids in classical gravity''}
+Phys. Rev. Lett. {\bf 70}, 3675 (1993).
+
+%\bibitem{Henon1974}
+%M. Henon,{\it ``Families of periodic orbits in the three-body problem''}
+%Celest. Mech. {\bf 10}, 375 (1974).
+
+\bibitem{Broucke1975}
+R. Broucke and D. Boggs,
+%{\it ``Periodic orbits in the Planar General Three-Body Problem''},
+Celest. Mech. {\bf 11}, 13 (1975).
+
+%\bibitem{Hadjidemetriou1975a}
+%J.D. Hadjidemetriou, 
+%{\it ``The continuation of periodic orbits from the restricted
+%to the general three-body problem''}, Celest. Mech. {\bf 12}, 155 (1975).
+
+\bibitem{Hadjidemetriou1975b}
+J.D. Hadjidemetriou and Th. Christides, 
+%{\it ``Families of periodic orbits in the planar three-body problem''}, 
+Celest. Mech. {\bf 12}, 175 (1975).
+
+\bibitem{Hadjidemetriou1975c}
+J.D. Hadjidemetriou, 
+%{\it ``The stability of periodic orbits in the three-body problem''}, 
+Celest. Mech. {\bf 12}, 255 (1975).
+
+\bibitem{Broucke1975b}
+R. Broucke, 
+%{\it ``On relative periodic solutions of the planar general three-body problem''},
+Celest. Mech. {\bf 12}, 439 (1975).
+
+\bibitem{Henon1976}
+M. Henon, 
+%{\it ``A family of periodic solutions of the planar three-body problem, and their stability"}, 
+Celest. Mech. {\bf 13}, 267 (1976).
+
+\bibitem{Henon:1977}
+M. Henon, 
+%{\it ``Stability of interplay motions"}, 
+Celest. Mech. {\bf 15}, 243 (1977).
+
+\bibitem{Vanderbei:2004}
+R. Vanderbei, 
+%{\it ``New Orbits for the n-Body Problem''}
+Ann. N.Y. Acad. Sci. {\bf 1017}, 422 (2004).
+
+\bibitem{Chenciner2000}
+A. Chenciner, R. Montgomery,
+%{\it ``A remarkable periodic solution of the three-body problem in the case of equal masses''}
+Ann. Math. {\bf 152}, 881 (2000).
+
+\bibitem{Nauenberg2001}
+M. Nauenberg,
+%{\it "Periodic Orbits for Three Particles With Finite Angular Momentum"},
+Phys. Lett. {\bf A 292}, 93 - 99, (2001).
+
+\bibitem{Chenciner2002}
+A. Chenciner, J. Gerver, R. Montgomery, C. Sim{\' o},
+%{\it "Simple Choreographic Motions of N Bodies: A Preliminary Study"}, 
+p. 287-308 in {\it "Geometry, Mechanics, and Dynamics 
+Part III,"}  Springer, N.Y. (2002)
+
+\bibitem{Simo2002}
+C. Sim{\' o}, 
+%{\it ``Dynamical properties of the figure eight solution of the three-body problem''},
+p.209  in ``Celestial Mechanics'',
+Edited by Alain Chenciner, Richard Cushman, Clark Robinson, and Zhihong Jeff Xia. 
+Contemporary Mathematics, Vol 292, AMS, Providence, R.I., (2002).
+
+\bibitem{Chenciner2005}
+A. Chenciner, J. Fejoz, and R. Montgomery,
+%{\it "Rotating Eights I: The Three $\Gamma_i$ Families"}
+Nonlinearity {\bf 18}, 1407 - 1424, (2005).
+
+\bibitem{Broucke2006}
+R. Broucke, A. Elipe, A. Riaguas, 
+%{\it ``On the figure-8 periodic solutions in the three-body problem''}
+Chaos, Solitons \& Fractals {\bf 30}, 513 - 520 (2006).
+
+\bibitem{Nauenberg2007}
+M. Nauenberg,
+%{\it ``Continuity and stability of families of figure eight orbits with finite angular momentum''}
+Celest. Mech. {\bf 97}, 1 (2007).
+
+%\cite{Suvakov:2012}
+\bibitem{Suvakov:2012b}
+M.~\v Suvakov, and V.~Dmitra\v sinovi\' c, 
+%{\it ``A new quasi-one-dimensional periodic three-body orbit with collisions''}, 
+in preparation (2012).
+
+\bibitem{gallery}
+http://suki.ipb.ac.rs/3body/
+
+\bibitem{Prasolov1997}
+V.V. Prasolov and A.B. Sossinsky, {\it ``Knots, Links, Braids and
+3-Manifolds''}, Translations of mathematical monographs, vol. 154,
+AMS, Providence, R.I. (1997).
+
+\bibitem{Montgomery1998}
+R. Montgomery, 
+%{\it ``The N-body problem, the braid group, and action-minimizing periodic solutions''}
+Nonlinearity {\bf 11}, 363 - 376 (1998).
+
+\bibitem{Iwai1987a}
+T. Iwai, 
+%{\it ``A geometric setting for internal motions of the quantum three-body system''}, 
+J. Math. Phys. {\bf 28}, 964, 1315 (1987). 
+
+%\cite{Suvakov:2010}
+\bibitem{Suvakov:2010}
+M.~\v Suvakov, and V.~Dmitra\v sinovi\' c,
+%{\it ``Approximate action-angle variables for the figure-eight and other periodic
+%three-body orbits"}, 
+Phys. Rev. E {\bf 83}, 056603 (2011).
+
+%\bibitem{Broucke1979}
+%R. Broucke, 
+%{\it ``On the Isosceles Triangle Configuration in the Planar General Three-body Problem''}
+%Astronomy and Astrophysics {\bf 73}, 303-313 (1979).
+
+\bibitem{Schubart1956}
+J. v. Schubart, 
+%{\it ``Numerische Aufsuchung periodischer Losungen im Dreik{\" o}rperproblem''}
+Astron. Nachr. {\bf 283}, 17 (1956) (in German).
+
+\bibitem{footnote1}
+Theoretical calculations of the outcome of binary-on-binary ``scattering''
+have been done, 
+however, with the outcome of three body systems that correspond to the
+figure-8 solution, 
+Ref. \cite{Heggie:2000ad}.
+
+%\cite{Heggie:2000ad}
+\bibitem{Heggie:2000ad} 
+  Douglas C. Heggie,
+%{\it ``A new outcome of binary-binary scattering''},
+  Mon.\ Not.\ Roy.\ Astron.\ Soc.\  {\bf 318}, L61 (2000)
+%[astro-ph/0609773].
+  %%CITATION = ASTRO-PH/0609773;%%
+%Mon. Not. R. Astron. Soc. 318, L61±L63 (2000)
+
+\bibitem{Galán2002}
+J. Gal\' an, F. J. Mu\~noz-Almaraz, E. Freire, E. Doedel, and A. Vanderbauwhede, 
+%{\it ``Stability and Bifurcations of the Figure-8 Solution of the Three-Body Problem''},
+Phys. Rev. Lett. {\bf 88}, 241101 (2002).
+
+%\cite{Imai:2007gn}
+\bibitem{Imai:2007gn} 
+T.~Imai, T.~Chiba and H.~Asada,
+%{\it ``A Choreographic solution to the general relativistic three-body problem''},,
+  Phys.\ Rev.\ Lett.\  {\bf 98}, 201102 (2007)
+  [gr-qc/0702076].
+  %%CITATION = GR-QC/0702076;%%
+
+%\cite{Chiba:2006ad}
+\bibitem{Chiba:2006ad} 
+  T.~Chiba, T.~Imai and H.~Asada,
+%{\it ``Can N-body systems generate periodic gravitational waves?''},
+  Mon.\ Not.\ Roy.\ Astron.\ Soc.\  {\bf 377}, 269 (2007)
+  [astro-ph/0609773].
+  %%CITATION = ASTRO-PH/0609773;%%
+
+%\cite{Torigoe:2009bw}
+\bibitem{Torigoe:2009bw} 
+  Y.~Torigoe, K.~Hattori and H.~Asada,
+%{\it ``Gravitational waveforms for 2 and 3-body gravitating systems''},
+  Phys.\ Rev.\ Lett.\  {\bf 102}, 251101 (2009)
+  [arXiv:0906.1448 [gr-qc]].
+  %%CITATION = ARXIV:0906.1448;%%
+
+\bibitem{Fujiwara2003a}
+T. Fujiwara, H. Fukuda and H. Ozaki,
+%{\it ``Choreographic three bodies on the lemniscate''},
+J. Phys. {\bf A 36}, 2791 (2003).
+
+\end{thebibliography}
+
+\end{document}
+
+
+%\noindent{\bf Supplementary Information} 
+%Supplementary Text 
+%is available in the online version of the paper.
+%Figures S1 to S33
+%References (28-40)
+
+
+%\noindent{\bf Author Contributions}
+
+%Both authors contributed to the planning of the project and the analysis 
+%of the numerical results. M.{\v S}. did most of the numerical work, V.D. 
+%wrote most of the text.
+
+%\noindent{\bf Competing financial interests}
+
+%The authors declare no competing financial interests.
+
+%===============================================================
+\begin{table}[tbh]
+\begin{center}  
+\caption{Initial conditions and periods of three-body orbits.
+${\dot x}_{1}(0), {\dot y}_{1}(0)$ are the first particle's initial 
+velocities in the x- and y-directions, respectively, T is the period. 
+Other two particles' initial conditions are specified by these two parameters, 
+as follows,  
+$x_1(0)=-x_2(0)=-1$, $x_3(0)=0$, $y_1(0)=y_2(0)=y_3(0)=0$,  
+$\dot x_2(0)=\dot x_1(0)$, $\dot x_3(0)=-2\dot x_1(0)$, $\dot y_2(0)=\dot y_1(0)$,
+$\dot y_3(0)=-2\dot y_1(0)$.  The ``Newton's'' coupling constant $G$ is taken as $G=1$
+and equal masses as $m_{1,2,3}=1$.
+All solutions have ``inversion partners'' (mirror images) in all four quadrants, i.e. if 
+${\dot x}_{1}(0), {\dot y}_{1}(0)$ is a solution, so are $\pm {\dot x}_{1}(0), \pm {\dot y}_{1}(0)$.
+Some of these ``partners'' are exactly identical to the originals, others are identical up
+to time-reversal, and yet others are related to the originals by a reflection; we
+consider all of them to be ``physically equivalent'' to the originals.
+Note that two pairs of initial conditions in the same quadrant (II.C.2a and II.C.2b; 
+and II.C.3a and II.C.3b) specify only two independent solutions, see 
+the text for explanation.}
+%as the two orbits in each respective pair are related 
+%by a rotation and rescaling of space and rescaling of time. 
+%This is due to the fact that their shape space trajectories 
+%passes through the same point with different velocities.}
+\begin{tabular}{ccccc}
+\hline \hline 
+{\rm class, no. \& name} & ${\dot x}_{1}(0)$ & ${\dot y}_{1}(0)$ & ${\rm T}$ \\
+\hline
+\hline
+I.A.1 butterfly I & 0.30689 & 0.12551 & 6.2356 \\ % (B6)
+I.A.2 butterfly II & 0.39295 & 0.09758 & 7.0039 \\ % (B9)
+I.A.3 bumblebee & 0.18428 & 0.58719 & 63.5345 \\ % (B33)
+\hline
+I.B.1 moth I & 0.46444 & 0.39606 & 14.8939 \\ % (B23)
+I.B.2 moth II & 0.43917 & 0.45297 & 28.6703 \\ % (B19)
+I.B.3 butterfly III & 0.40592 & 0.23016 & 13.8658 \\ % (B21)
+I.B.4 moth III & 0.38344 & 0.37736 & 25.8406 \\ % (B22)
+I.B.5 goggles & 0.08330 & 0.12789 & 10.4668 \\ % (B25)
+I.B.6 butterfly IV & 0.350112 & 0.07934 & 79.4759 \\ % (ZZZZ)
+I.B.7 dragonfly & 0.08058 & 0.58884 & 21.2710 \\ % (B24)
+%\hline
+\hline
+II.B.1 yarn & 0.55906 & 0.34919 & 55.5018 \\ % (B13)
+II.C.2a yin-yang I & 0.51394 & 0.30474 & 17.3284 \\ % (B12)
+II.C.2b yin-yang I & 0.28270 & 0.32721 & 10.9626 \\ % (B20)
+II.C.3a yin-yang II & 0.41682  & 0.33033 & 55.7898 \\ % (B30)
+II.C.3b yin-yang II & 0.41734  & 0.31310 & 54.2076 \\ % (B34)
+\hline
+\hline
+\end{tabular}
+\label{tab:drcc2n}
+\end{center}
+\end{table}
+%===============================================================
+%===============================================================
+\begin{table}[tbh]
+\begin{center}  
+\caption{Free group elements of three-body orbits.}
+%as the two orbits in each respective pair are related 
+%by a rotation and rescaling of space and rescaling of time. 
+%This is due to the fact that their shape space trajectories 
+%passes through the same point with different velocities.}
+\begin{tabular}{ccc}
+\hline \hline 
+{\rm class, no.} & {\rm free group element} \\
+\hline
+\hline
+I.A.1 & $(ab)^2 (AB)^2$ \\ 
+I.A.2 & $(ab)^2 (AB)^2$ \\ % (B9)
+I.A.3 & $(b^2 (ABab)^2 A^2 (baBA)^2 ba) (B^2 (abAB)^2 a^2 (BAba)^2 BA)$ \\ % (B33)
+\hline
+I.B.1 & $ba(BAB)ab(ABA)$ \\ % (B23)
+I.B.2 & $(abAB)^2 A (baBA)^2 B$ \\ % (B19)
+I.B.3 & $(ab)^2(ABA)(ba)^2(BAB)$ \\ % (B21)
+I.B.4 & $(babABA)^2 a (abaBAB)^2 b$ \\ % (B22)
+I.B.5 & $(ab)^2 ABBA (ba)^2 BAAB$ \\ % (B25)
+I.B.6 & $((ab)^2 (AB)^2)^6 A((ba)^2 (BA)^2)^6 B$ \\ % (ZZZZ)
+I.B.7 & $(b^2(ABabAB))(a^2(BAbaBA))$ \\ % (B24)
+%\hline
+\hline
+II.B.1 & $(babABabaBA)^3$ \\ % (B13)
+II.C.2a & $(ab)^2(ABA)ba(BAB)$ \\ % (B12)
+II.C.2b & $(ab)^2(ABA)ba(BAB)$ \\ % (B20)
+II.C.3a & $(abaBAB)^3 (abaBAbab)(ABAbab)^3 (AB)^2$ \\ % (B30)
+II.C.3b & $(abaBAB)^3 (abaBAbab)(ABAbab)^3 (AB)^2$ \\ % (B34)
+\hline
+\hline
+\end{tabular}
+\label{tab:free_group}
+\end{center}
+\end{table}
+%===============================================================

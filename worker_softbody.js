@@ -3,16 +3,45 @@ let nodes = [];
 let springs = [];
 let bounds = 300; // -300 to 300 on all axes
 let gravity = 0.2;
-let stiffness = 0.9;
+let stiffness = 0.85; // Slightly less stiff for more jiggle
 let bounce = 0.8;
-let friction = 0.99;
+let friction = 0.98; // More dampening for jelly feel
 
 const ITERATIONS = 12;
+
+let intervalId = null;
 
 onmessage = function(e) {
     const data = e.data;
     if (data.type === 'init') {
         initMesh(data.size, data.spacing);
+    } else if (data.type === 'stop') {
+        if (intervalId) {
+            clearInterval(intervalId);
+            intervalId = null;
+        }
+    } else if (data.type === 'start') {
+        if (!intervalId) {
+            intervalId = setInterval(() => {
+                if (nodes.length > 0) {
+                    updatePhysics();
+                    
+                    // Prepare arrays for transfer
+                    let posArray = new Float32Array(nodes.length * 3);
+                    for (let i = 0; i < nodes.length; i++) {
+                        posArray[i * 3] = nodes[i].x;
+                        posArray[i * 3 + 1] = nodes[i].y;
+                        posArray[i * 3 + 2] = nodes[i].z;
+                    }
+
+                    postMessage({
+                        type: 'render',
+                        positions: posArray,
+                        springs: springs.map(s => [s.a, s.b])
+                    });
+                }
+            }, 1000 / 60);
+        }
     } else if (data.type === 'kick') {
         for (let n of nodes) {
             n.oldY = n.y + Math.random() * 20 + 20; // Kick upwards
@@ -45,6 +74,25 @@ function initMesh(size, spacing) {
     }
 
     const getIdx = (x, y, z) => z * size * size + y * size + x;
+
+    // Calculate Surface Faces (Triangles)
+    let faces = [];
+    const addFace = (v0, v1, v2, v3) => {
+        faces.push(v0, v1, v2, v0, v2, v3);
+    };
+
+    for (let i = 0; i < size - 1; i++) {
+        for (let j = 0; j < size - 1; j++) {
+            addFace(getIdx(i, j, 0), getIdx(i+1, j, 0), getIdx(i+1, j+1, 0), getIdx(i, j+1, 0)); // Z=0
+            addFace(getIdx(i, j, size-1), getIdx(i, j+1, size-1), getIdx(i+1, j+1, size-1), getIdx(i+1, j, size-1)); // Z=max
+            addFace(getIdx(i, 0, j), getIdx(i, 0, j+1), getIdx(i+1, 0, j+1), getIdx(i+1, 0, j)); // Y=0
+            addFace(getIdx(i, size-1, j), getIdx(i+1, size-1, j), getIdx(i+1, size-1, j+1), getIdx(i, size-1, j+1)); // Y=max
+            addFace(getIdx(0, i, j), getIdx(0, i+1, j), getIdx(0, i+1, j+1), getIdx(0, i, j+1)); // X=0
+            addFace(getIdx(size-1, i, j), getIdx(size-1, i, j+1), getIdx(size-1, i+1, j+1), getIdx(size-1, i+1, j)); // X=max
+        }
+    }
+    
+    postMessage({ type: 'mesh', faces: faces });
 
     // Create Springs
     for (let z = 0; z < size; z++) {
@@ -151,23 +199,3 @@ function updatePhysics() {
     }
 }
 
-// Fixed timestep loop
-setInterval(() => {
-    if (nodes.length > 0) {
-        updatePhysics();
-        
-        // Prepare arrays for transfer
-        let posArray = new Float32Array(nodes.length * 3);
-        for (let i = 0; i < nodes.length; i++) {
-            posArray[i * 3] = nodes[i].x;
-            posArray[i * 3 + 1] = nodes[i].y;
-            posArray[i * 3 + 2] = nodes[i].z;
-        }
-
-        postMessage({
-            type: 'render',
-            positions: posArray,
-            springs: springs.map(s => [s.a, s.b])
-        });
-    }
-}, 1000 / 60);

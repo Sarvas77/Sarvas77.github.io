@@ -16,6 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <li><a href="pendulums.html" class="nav-link" data-page="pendulums">Rope & Pendulums</a></li>
             <li><a href="fluids.html" class="nav-link" data-page="fluids">Fluid Dynamics</a></li>
             <li><a href="gravity.html" class="nav-link" data-page="gravity">Gravity & Orbits</a></li>
+            <li><a href="electromagnetism.html" class="nav-link" data-page="electromagnetism">Electromagnetism</a></li>
         </ul>
     `;
 
@@ -34,6 +35,8 @@ document.addEventListener("DOMContentLoaded", () => {
             currentPage = 'fluids';
         } else if (path.includes('gravity.html')) {
             currentPage = 'gravity';
+        } else if (path.includes('electromagnetism.html')) {
+            currentPage = 'electromagnetism';
         } else if (path.endsWith('/') || path.includes('index.html')) {
             currentPage = 'index';
         }

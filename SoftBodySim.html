@@ -30,6 +30,8 @@
         let worker;
         let positions = new Float32Array();
         let springs = [];
+        let faces = [];
+        let isRunning = false;
         
         function setup() {
             // WEBGL enables 3D rendering
@@ -40,6 +42,8 @@
                 if (e.data.type === 'render') {
                     positions = e.data.positions;
                     springs = e.data.springs;
+                } else if (e.data.type === 'mesh') {
+                    faces = e.data.faces;
                 }
             };
             
@@ -49,9 +53,23 @@
                 size: 7,
                 spacing: 30
             });
+
+            noLoop(); // Start paused
+            window.addEventListener('message', function(e) {
+                if (e.data.type === 'start') {
+                    isRunning = true;
+                    worker.postMessage({ type: 'start' });
+                    loop();
+                } else if (e.data.type === 'stop') {
+                    isRunning = false;
+                    worker.postMessage({ type: 'stop' });
+                    noLoop();
+                }
+            });
         }
 
         function draw() {
+            if (!isRunning) return;
             background(10);
 
             // Enable 3D camera controls
@@ -70,44 +88,21 @@
             box(600); // from -300 to 300
             pop();
 
-            if (positions.length === 0) return;
+            if (positions.length === 0 || faces.length === 0) return;
 
-            // Draw Springs
-            stroke(100, 255, 218, 80);
-            strokeWeight(1);
-            beginShape(LINES);
-            for (let i = 0; i < springs.length; i++) {
-                let a = springs[i][0];
-                let b = springs[i][1];
-                let x1 = positions[a * 3];
-                let y1 = positions[a * 3 + 1];
-                let z1 = positions[a * 3 + 2];
-                let x2 = positions[b * 3];
-                let y2 = positions[b * 3 + 1];
-                let z2 = positions[b * 3 + 2];
-                
-                vertex(x1, y1, z1);
-                vertex(x2, y2, z2);
-            }
-            endShape();
-
-            // Draw Nodes
+            // Draw Jelly Surface Mesh
             noStroke();
-            fill(100, 255, 218, 200);
+            fill(100, 255, 218, 150); // Translucent jelly color
             ambientMaterial(100, 255, 218);
             specularMaterial(255);
-            shininess(50);
+            shininess(100);
 
-            for (let i = 0; i < positions.length / 3; i++) {
-                let x = positions[i * 3];
-                let y = positions[i * 3 + 1];
-                let z = positions[i * 3 + 2];
-                
-                push();
-                translate(x, y, z);
-                sphere(4);
-                pop();
+            beginShape(TRIANGLES);
+            for (let i = 0; i < faces.length; i++) {
+                let idx = faces[i] * 3;
+                vertex(positions[idx], positions[idx + 1], positions[idx + 2]);
             }
+            endShape();
         }
 
         function windowResized() {

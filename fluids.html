@@ -26,27 +26,52 @@
 
         <div class="sim-list">
             <article class="sim-card">
-                <div class="sim-header">
-                    <h2 class="project-title">Cyber-Fluid Solver</h2>
-                    <p class="project-desc">Real-time smoke and liquid simulation using a grid-based velocity field solver.</p>
+                <div class="sim-header" style="flex-direction: row; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 class="project-title">Cyber-Fluid Solver</h2>
+                        <p class="project-desc">Real-time smoke and liquid simulation using a grid-based velocity field solver.</p>
+                    </div>
+                    <button class="sim-toggle-btn" onclick="toggleSim(this, 'fluid-iframe')">Start</button>
                 </div>
                 <div class="iframe-wrapper">
-                    <iframe src="FluidSim.html" class="ar-10-8" allowfullscreen></iframe>
+                    <iframe id="fluid-iframe" src="FluidSim.html" class="ar-10-8" allowfullscreen></iframe>
                 </div>
             </article>
 
             <article class="sim-card">
-                <div class="sim-header">
-                    <h2 class="project-title">Soft-Body "Jelly" Physics</h2>
-                    <p class="project-desc">A highly stable Verlet mass-spring lattice simulating 2D deformable bodies.</p>
+                <div class="sim-header" style="flex-direction: row; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 class="project-title">Soft-Body "Jelly" Physics</h2>
+                        <p class="project-desc">A highly stable Verlet mass-spring lattice simulating 2D deformable bodies.</p>
+                    </div>
+                    <button class="sim-toggle-btn" onclick="toggleSim(this, 'softbody-iframe')">Start</button>
                 </div>
                 <div class="iframe-wrapper">
-                    <iframe src="SoftBodySim.html" class="ar-10-8" allowfullscreen></iframe>
+                    <iframe id="softbody-iframe" src="SoftBodySim.html" class="ar-10-8" allowfullscreen></iframe>
                 </div>
             </article>
         </div>
     </main>
 </div>
+
+<script>
+    function toggleSim(btn, iframeId) {
+        const iframe = document.getElementById(iframeId);
+        if (!iframe || !iframe.contentWindow) return;
+
+        const currentText = btn.textContent.trim().toLowerCase();
+        
+        if (currentText === 'start') {
+            btn.textContent = 'Stop';
+            btn.classList.add('running');
+            iframe.contentWindow.postMessage({ type: 'start' }, '*');
+        } else {
+            btn.textContent = 'Start';
+            btn.classList.remove('running');
+            iframe.contentWindow.postMessage({ type: 'stop' }, '*');
+        }
+    }
+</script>
 
 </body>
 </html>

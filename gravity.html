@@ -26,6 +26,19 @@
 
         <div class="sim-list">
             <article class="sim-card">
+                <div class="sim-header" style="flex-direction: row; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 class="project-title">RK4 Stable 3D Orbits</h2>
+                        <p class="project-desc">High-precision 3D gravity using Runge-Kutta 4th order integration for stable N-body configurations.</p>
+                    </div>
+                    <button class="sim-toggle-btn" onclick="toggleSim(this, 'stable-orbits-iframe')">Start</button>
+                </div>
+                <div class="iframe-wrapper">
+                    <iframe id="stable-orbits-iframe" src="StableOrbitsSim.html" class="ar-10-8" allowfullscreen></iframe>
+                </div>
+            </article>
+
+            <article class="sim-card">
                 <div class="sim-header">
                     <h2 class="project-title">3D Galaxy Simulation</h2>
                     <p class="project-desc">A 3D N-body orbital engine with a massive central black hole.</p>
@@ -58,6 +71,25 @@
     </main>
 
 </div>
+
+<script>
+    function toggleSim(btn, iframeId) {
+        const iframe = document.getElementById(iframeId);
+        if (!iframe || !iframe.contentWindow) return;
+
+        const currentText = btn.textContent.trim().toLowerCase();
+        
+        if (currentText === 'start') {
+            btn.textContent = 'Stop';
+            btn.classList.add('running');
+            iframe.contentWindow.postMessage({ type: 'start' }, '*');
+        } else {
+            btn.textContent = 'Start';
+            btn.classList.remove('running');
+            iframe.contentWindow.postMessage({ type: 'stop' }, '*');
+        }
+    }
+</script>
 
 </body>
 </html>
